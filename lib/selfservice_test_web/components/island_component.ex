@@ -5,7 +5,10 @@ defmodule SelfServiceWeb.IslandComponent do
   attr :module, :string, doc: "the module you want to render"
   attr :props, :map, default: %{}, doc: "properties to pass into the component"
   attr :lazy, :boolean, default: false, doc: "lazy loads component when its in view"
-  attr :media, :string, default: nil, doc: "the media query to decide if this component should be rendered"
+
+  attr :media, :string,
+    default: nil,
+    doc: "the media query to decide if this component should be rendered"
 
   def island(assigns) do
     json = Jason.encode!(assigns.props)
@@ -15,10 +18,12 @@ defmodule SelfServiceWeb.IslandComponent do
     ~H"""
     <island-root
       data-module={@module}
-      data-lazy={@lazy}
+      data-lazy={@lazy || nil}
       data-media={@media}
       data-props={@json}
-    >{@ssr_html}</island-root>
+    >
+      {@ssr_html}
+    </island-root>
     """
   end
 

@@ -15,7 +15,7 @@ defmodule SelfServiceWeb.IslandSsrWorker do
   # --- Public API ---
 
   def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__, timeout: 5_000)
   end
 
   def render(module, props) do
@@ -97,7 +97,7 @@ defmodule SelfServiceWeb.IslandSsrWorker do
     msg = Jason.encode!(%{id: id, module: module, props: props})
     Port.command(state.port, msg <> "\n")
 
-    timer_ref = Process.send_after(self(), {:request_timeout, id}, 10_000)
+    timer_ref = Process.send_after(self(), {:request_timeout, id}, 2_000)
     pending = Map.put(state.pending, id, %{from: from, timer_ref: timer_ref})
     {:noreply, %{state | next_id: id + 1, pending: pending}}
   end

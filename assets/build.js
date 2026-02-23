@@ -77,12 +77,12 @@ const ssrOpts = {
     logLevel: 'info',
     alias: { "@": "." },
     minify: deploy,
-    sourcemap: watch ? 'inline' : false,
+    sourcemap: false,
     plugins: [
         autoRegistryPlugin({ isSSR: true }),
         esbuildSvelte({
             compilerOptions: {
-                dev: watch,
+                dev: false,
                 css: 'injected',
                 generate: 'server'
             }
