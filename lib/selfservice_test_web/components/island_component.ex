@@ -28,13 +28,13 @@ defmodule SelfServiceWeb.IslandComponent do
   end
 
   defp ssr_render(module, props) do
-    case SelfServiceWeb.IslandSsrWorker.render(module, props) do
+    case SelfService.SSR.Worker.render!(module, props) do
       {:ok, %{"html" => html}} ->
         Phoenix.HTML.raw(html)
 
       {:error, reason} ->
         Logger.warning("SSR render failed for #{module}: #{inspect(reason)}")
-        ""
+        "<!-- SSR render failed for #{module}: #{inspect(reason)} -->"
     end
   end
 end

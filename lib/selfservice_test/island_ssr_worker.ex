@@ -1,4 +1,4 @@
-defmodule SelfServiceWeb.IslandSsrWorker do
+defmodule SelfService.SSR.Worker do
   use GenServer
   require Logger
 
@@ -14,12 +14,26 @@ defmodule SelfServiceWeb.IslandSsrWorker do
 
   # --- Public API ---
 
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__, timeout: 5_000)
+  def start_link(opts) do
+    GenServer.start_link(__MODULE__, opts, name: opts[:name])
   end
 
-  def render(module, props) do
-    GenServer.call(__MODULE__, {:render, %{module: module, props: props}})
+  def render!(module, props) do
+    GenServer.call(
+      {:via, PartitionSupervisor, {__MODULE__.Pool, self()}},
+      {:render, %{module: module, props: props}},
+      5000
+    )
+  rescue
+    e in [ArgumentError] ->
+      # PartitionSupervisor itself is gone (pool permanently down)
+      Logger.warning("[SSRWorker] SSR pool unavailable, degrading to CSR: #{inspect(e)}")
+      {:error, :ssr_unavailable}
+  catch
+    :exit, reason ->
+      # GenServer process exited mid-call (crash, noproc, etc.)
+      Logger.warning("[SSRWorker] SSR render exited, degrading to CSR: #{inspect(reason)}")
+      {:error, :ssr_unavailable}
   end
 
   # --- Callbacks ---
@@ -37,7 +51,6 @@ defmodule SelfServiceWeb.IslandSsrWorker do
     {:ok, start_port!(state)}
   end
 
-  # Handle node buffer
   @impl true
   def handle_info({port, {:data, chunk}}, %{port: port} = state) do
     # Append the new chunk to the current state.buffer
@@ -56,17 +69,17 @@ defmodule SelfServiceWeb.IslandSsrWorker do
     {:noreply, state}
   end
 
-  # Exit
+  # Exit — let the supervisor handle restarts and backoff via max_restarts/max_seconds.
+  # Once the supervisor gives up, the pool goes down and render/2 degrades to CSR.
   @impl true
   def handle_info({port, {:exit_status, status}}, %{port: port} = state) do
-    Logger.info("External exit: :exit_status: #{status}")
+    Logger.error("[SSRWorker] Node worker exited with status #{status}, stopping GenServer")
 
-    # Reply with error to all pending callers
     for {_id, %{from: from}} <- state.pending do
       GenServer.reply(from, {:error, :worker_crashed})
     end
 
-    {:noreply, %{state | port: nil, pending: %{}, buffer: ""}}
+    {:stop, {:worker_exited, status}, %{state | port: nil, pending: %{}, buffer: ""}}
   end
 
   # Render call
@@ -92,7 +105,6 @@ defmodule SelfServiceWeb.IslandSsrWorker do
   # Render call
   @impl true
   def handle_call({:render, %{module: module, props: props}}, from, state) do
-    state = ensure_port_running(state)
     id = state.next_id
     msg = Jason.encode!(%{id: id, module: module, props: props})
     Port.command(state.port, msg <> "\n")
@@ -103,9 +115,6 @@ defmodule SelfServiceWeb.IslandSsrWorker do
   end
 
   # --- Helpers ---
-
-  defp ensure_port_running(%{port: nil} = state), do: start_port!(state)
-  defp ensure_port_running(state), do: state
 
   defp start_port!(state) do
     port =

@@ -24,9 +24,10 @@ config :selfservice_test, SelfServiceWeb.Endpoint,
   live_view: [signing_salt: "2TzUMSHY"]
 
 # Configure node/SSR rendering
-config :selfservice_test, SelfServiceWeb.IslandSsrWorker,
-  worker_path: "priv/static/assets/ssr/worker.js",
-  runtime: "node"
+config :selfservice_test, SelfService.SSR.Worker,
+  worker_path: "priv/static/assets/ssr/ssr_worker.js",
+  runtime: "node",
+  pool_size: 4
 
 # Configures the mailer
 #

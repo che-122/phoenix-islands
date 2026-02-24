@@ -14,7 +14,17 @@ defmodule SelfService.Application do
        repos: Application.fetch_env!(:selfservice_test, :ecto_repos), skip: skip_migrations?()},
       {DNSCluster, query: Application.get_env(:selfservice_test, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: SelfService.PubSub},
-      SelfServiceWeb.IslandSsrWorker,
+      Supervisor.child_spec(
+        {PartitionSupervisor,
+         child_spec: SelfService.SSR.Worker,
+         name: SelfService.SSR.Worker.Pool,
+         partitions:
+           Application.get_env(:selfservice_test, SelfService.SSR.Worker)[:pool_size] ||
+             System.schedulers_online()},
+        # When the pool exhausts its own max_restarts, let it die quietly
+        # rather than crashing the Phoenix application. SSR degrades to CSR.
+        restart: :temporary
+      ),
       # Start a worker by calling: SelfService.Worker.start_link(arg)
       # {SelfService.Worker, arg},
       # Start to serve requests, typically the last entry
