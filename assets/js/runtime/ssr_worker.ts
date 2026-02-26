@@ -27,7 +27,6 @@ process.stdin.on("data", (chunk: string) => {
         throw new Error(`Component not found: ${message.module}`);
       }
 
-      // Svelte 5 SSR provides body and head as output of render
       const { body, head } = render(Component, { props: message.props || {} });
 
       process.stdout.write(JSON.stringify({ ok: true, id: msgId, data: { html: body, head } }) + "\n");

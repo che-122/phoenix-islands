@@ -19,27 +19,37 @@ const autoRegistryPlugin = (options) => ({
             let files = [];
 
             try {
-                files = fs.readdirSync(componentsDir).filter(f => f.endsWith('.svelte'));
+                // Node 22+: glob pattern picks up all .svelte files recursively
+                files = fs
+                    .globSync('**/*.svelte', { cwd: componentsDir })
+                    .map(f => f.split(path.sep).join('/'));
             } catch (e) {
-                // Return empty if directory doesn't exist yet
                 return { contents: 'export default {};', loader: 'js' };
             }
+
+            // Registry key: relative path without extension, e.g. "ui/Button"
+            const key = (f) => f.replace(/\.svelte$/, '');
 
             let contents = '';
 
             if (options.isSSR) {
-                // Static imports for SSR
                 const imports = files.map((f, i) => `import Cmp${i} from "./js/components/${f}";`).join('\n');
-                const exports = files.map((f, i) => `"${f.replace('.svelte', '')}": Cmp${i}`).join(',\n');
+                const exports = files.map((f, i) => `"${key(f)}": Cmp${i}`).join(',\n');
                 contents = `${imports}\nexport default {\n${exports}\n};`;
             } else {
-                // Dynamic imports for CSR
-                const exports = files.map(f => `"${f.replace('.svelte', '')}": () => import("./js/components/${f}")`).join(',\n');
+                const exports = files.map(f => `"${key(f)}": () => import("./js/components/${f}")`).join(',\n');
                 contents = `export default {\n${exports}\n};`;
             }
 
-            return { contents, loader: 'js', resolveDir: __dirname };
+            // Watch componentsDir + every subdirectory explicitly via glob
+            const watchDirs = [
+                componentsDir,
+                ...fs.globSync('**/', { cwd: componentsDir }).map(d => path.join(componentsDir, d))
+            ];
+
+            return { contents, loader: 'js', resolveDir: __dirname, watchDirs };
         });
+
     }
 });
 
@@ -55,6 +65,7 @@ const clientOpts = {
     alias: { "@": "." },
     minify: deploy,
     sourcemap: watch ? 'inline' : false,
+    treeShaking: true,
     plugins: [
         autoRegistryPlugin({ isSSR: false }),
         esbuildSvelte({
@@ -67,7 +78,7 @@ const clientOpts = {
 }
 
 const ssrOpts = {
-    entryPoints: ['js/islands/ssr/worker.ts'],
+    entryPoints: ['js/runtime/ssr_worker.ts'],
     bundle: true,
     platform: 'node',
     conditions: ['svelte'],

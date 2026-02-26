@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "node build.js",
-    "deploy": "node build.js --minify",
+    "build": "node build.js --minify --tree-shaking=true",
+    "deploy": "node build.js --minify --tree-shaking=true",
     "dev": "node build.js --watch"
   },
   "keywords": [],
