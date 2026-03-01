@@ -3,7 +3,7 @@ defmodule Dashboard.MixProject do
 
   def project do
     [
-      app: :dashboard_test,
+      app: :dashboard,
       version: "0.1.0",
       elixir: "~> 1.15",
       elixirc_paths: elixirc_paths(Mix.env()),
@@ -81,9 +81,9 @@ defmodule Dashboard.MixProject do
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       "assets.setup": ["tailwind.install --if-missing", "cmd --cd assets npm install"],
-      "assets.build": ["compile", "tailwind dashboard_test", "cmd --cd assets npm run build"],
+      "assets.build": ["compile", "tailwind dashboard", "cmd --cd assets npm run build"],
       "assets.deploy": [
-        "tailwind dashboard_test --minify",
+        "tailwind dashboard --minify",
         "cmd --cd assets npm run deploy",
         "phx.digest"
       ],

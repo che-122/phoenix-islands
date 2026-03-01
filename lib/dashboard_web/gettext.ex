@@ -21,5 +21,5 @@ defmodule DashboardWeb.Gettext do
 
   See the [Gettext Docs](https://hexdocs.pm/gettext) for detailed usage.
   """
-  use Gettext.Backend, otp_app: :dashboard_test
+  use Gettext.Backend, otp_app: :dashboard
 end

@@ -40,7 +40,7 @@ defmodule Dashboard.SSR.Worker do
 
   @impl true
   def init(_opts) do
-    config = Application.get_env(:dashboard_test, __MODULE__, nil)
+    config = Application.get_env(:dashboard, __MODULE__, nil)
 
     state = %{
       @initial_state

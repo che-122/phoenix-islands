@@ -11,15 +11,15 @@ defmodule Dashboard.Application do
       DashboardWeb.Telemetry,
       Dashboard.Repo,
       {Ecto.Migrator,
-       repos: Application.fetch_env!(:dashboard_test, :ecto_repos), skip: skip_migrations?()},
-      {DNSCluster, query: Application.get_env(:dashboard_test, :dns_cluster_query) || :ignore},
+       repos: Application.fetch_env!(:dashboard, :ecto_repos), skip: skip_migrations?()},
+      {DNSCluster, query: Application.get_env(:dashboard, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Dashboard.PubSub},
       Supervisor.child_spec(
         {PartitionSupervisor,
          child_spec: Dashboard.SSR.Worker,
          name: Dashboard.SSR.Worker.Pool,
          partitions:
-           Application.get_env(:dashboard_test, Dashboard.SSR.Worker)[:pool_size] ||
+           Application.get_env(:dashboard, Dashboard.SSR.Worker)[:pool_size] ||
              System.schedulers_online()},
         # When the pool exhausts its own max_restarts, let it die quietly
         # rather than crashing the Phoenix application. SSR degrades to CSR.

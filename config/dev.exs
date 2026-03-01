@@ -1,8 +1,8 @@
 import Config
 
 # Configure your database
-config :dashboard_test, Dashboard.Repo,
-  database: Path.expand("../dashboard_test_dev.db", __DIR__),
+config :dashboard, Dashboard.Repo,
+  database: Path.expand("../dashboard_dev.db", __DIR__),
   pool_size: 5,
   stacktrace: true,
   show_sensitive_data_on_connection_error: true
@@ -13,7 +13,7 @@ config :dashboard_test, Dashboard.Repo,
 # The watchers configuration can be used to run external
 # watchers to your application. For example, we can use it
 # to bundle .js and .css sources.
-config :dashboard_test, DashboardWeb.Endpoint,
+config :dashboard, DashboardWeb.Endpoint,
   # Binding to loopback ipv4 address prevents access from other machines.
   # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
   http: [ip: {127, 0, 0, 1}, port: String.to_integer(System.get_env("PORT") || "4000")],
@@ -23,8 +23,8 @@ config :dashboard_test, DashboardWeb.Endpoint,
   secret_key_base: "ecqfDd3ZbdJY5e8oEoGxJJkBZ2dxcLotn9MUPuCM7pJDvPpX2ZftGH4nkIaNLF2U",
   watchers: [
     node: ["build.js", "--watch", cd: Path.expand("../assets", __DIR__)],
-    # esbuild: {Esbuild, :install_and_run, [:dashboard_test, ~w(--sourcemap=inline --watch)]},
-    tailwind: {Tailwind, :install_and_run, [:dashboard_test, ~w(--watch)]}
+    # esbuild: {Esbuild, :install_and_run, [:dashboard, ~w(--sourcemap=inline --watch)]},
+    tailwind: {Tailwind, :install_and_run, [:dashboard, ~w(--watch)]}
     # esbuild_ssr: {Esbuild, :install_and_run, [:islands_ssr, ~w(--watch)]}
   ]
 
@@ -52,18 +52,18 @@ config :dashboard_test, DashboardWeb.Endpoint,
 # different ports.
 
 # Watch static and templates for browser reloading.
-config :dashboard_test, DashboardWeb.Endpoint,
+config :dashboard, DashboardWeb.Endpoint,
   live_reload: [
     web_console_logger: true,
     patterns: [
       ~r"priv/static/(?!uploads/).*(js|css|png|jpeg|jpg|gif|svg)$",
       ~r"priv/gettext/.*(po)$",
-      ~r"lib/dashboard_test_web/(?:controllers|live|components|router)/?.*\.(ex|heex)$"
+      ~r"lib/dashboard_web/(?:controllers|live|components|router)/?.*\.(ex|heex)$"
     ]
   ]
 
 # Enable dev routes for dashboard and mailbox
-config :dashboard_test, dev_routes: true
+config :dashboard, dev_routes: true
 
 # Do not include metadata nor timestamps in development logs
 config :logger, :default_formatter, format: "[$level] $message\n"
