@@ -1,4 +1,4 @@
-defmodule SelfServiceWeb.IslandComponent do
+defmodule DashboardWeb.IslandComponent do
   use Phoenix.Component
   require Logger
 
@@ -28,7 +28,7 @@ defmodule SelfServiceWeb.IslandComponent do
   end
 
   defp ssr_render(module, props) do
-    case SelfService.SSR.Worker.render!(module, props) do
+    case Dashboard.SSR.Worker.render!(module, props) do
       {:ok, %{"html" => html}} ->
         Phoenix.HTML.raw(html)
 

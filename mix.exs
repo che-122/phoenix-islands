@@ -1,9 +1,9 @@
-defmodule SelfService.MixProject do
+defmodule Dashboard.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :selfservice_test,
+      app: :dashboard_test,
       version: "0.1.0",
       elixir: "~> 1.15",
       elixirc_paths: elixirc_paths(Mix.env()),
@@ -20,7 +20,7 @@ defmodule SelfService.MixProject do
   # Type `mix help compile.app` for more information.
   def application do
     [
-      mod: {SelfService.Application, []},
+      mod: {Dashboard.Application, []},
       extra_applications: [:logger, :runtime_tools]
     ]
   end
@@ -81,9 +81,9 @@ defmodule SelfService.MixProject do
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       "assets.setup": ["tailwind.install --if-missing", "cmd --cd assets npm install"],
-      "assets.build": ["compile", "tailwind selfservice_test", "cmd --cd assets npm run build"],
+      "assets.build": ["compile", "tailwind dashboard_test", "cmd --cd assets npm run build"],
       "assets.deploy": [
-        "tailwind selfservice_test --minify",
+        "tailwind dashboard_test --minify",
         "cmd --cd assets npm run deploy",
         "phx.digest"
       ],

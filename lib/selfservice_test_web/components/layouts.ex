@@ -1,9 +1,9 @@
-defmodule SelfServiceWeb.Layouts do
+defmodule DashboardWeb.Layouts do
   @moduledoc """
   This module holds layouts and related functionality
   used by your application.
   """
-  use SelfServiceWeb, :html
+  use DashboardWeb, :html
 
   # Embed all files in layouts/* within this module.
   # The default root.html.heex file contains the HTML

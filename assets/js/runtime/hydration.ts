@@ -1,15 +1,16 @@
 export interface ClientConfig<T> {
   resolve: (path: string, resolver?: (path: string, ext: string) => Promise<T>) => Promise<T>
-  hydrate: (component: T, options: { target: HTMLElement; props: any }) => void
+  hydrate: (component: T, options: { target: HTMLElement; props: any }) => void,
+  destroy: (component: T) => void
 }
 
 const resetInputs = ({ element }: { element: HTMLElement }) => {
   return new Promise<void>((resolve) => {
     if (
       window.performance?.navigation?.type ===
-        performance.navigation.TYPE_RELOAD ||
+      performance.navigation.TYPE_RELOAD ||
       window.performance?.navigation?.type ===
-        performance.navigation.TYPE_BACK_FORWARD
+      performance.navigation.TYPE_BACK_FORWARD
     ) {
       // reset various inputs
       element.querySelectorAll<HTMLInputElement>("input").forEach((el) => {
@@ -105,7 +106,7 @@ export const safeJsonParse = (json: string) => {
   }
 };
 
-export function init<T>({ resolve, hydrate }: ClientConfig<T>) {
+export function init<T>({ resolve, hydrate, destroy }: ClientConfig<T>) {
   class IslandRoot extends HTMLElement {
     private cleanupMediaListener?: any
 
@@ -120,10 +121,18 @@ export function init<T>({ resolve, hydrate }: ClientConfig<T>) {
 
       if (this.hasAttribute('data-media')) {
         const query = this.getAttribute('data-media') ?? ''
+        let component: T | null = null;
         this.cleanupMediaListener = media({
           query,
-          onMatch: async () => await this.hydrate(),
-          onUnmatch: () => (this.innerHTML = ''),
+          onMatch: async () => {
+            component = await this.hydrate()
+          },
+          onUnmatch: async () => {
+            if (component) {
+              destroy(component)
+              component = null
+            }
+          }
         })
       } else {
         await this.hydrate()
@@ -140,7 +149,10 @@ export function init<T>({ resolve, hydrate }: ClientConfig<T>) {
       const props = propsData ? safeJsonParse(propsData) : {}
 
       const Component = await resolve(src)
+
       hydrate(Component, { target: this, props })
+
+      return Component
     }
   }
   customElements.define('island-root', IslandRoot)

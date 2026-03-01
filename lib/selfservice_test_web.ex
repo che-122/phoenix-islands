@@ -1,12 +1,12 @@
-defmodule SelfServiceWeb do
+defmodule DashboardWeb do
   @moduledoc """
   The entrypoint for defining your web interface, such
   as controllers, components, channels, and so on.
 
   This can be used in your application as:
 
-      use SelfServiceWeb, :controller
-      use SelfServiceWeb, :html
+      use DashboardWeb, :controller
+      use DashboardWeb, :html
 
   The definitions below will be executed for every controller,
   component, etc, so keep them short and clean, focused
@@ -40,7 +40,7 @@ defmodule SelfServiceWeb do
     quote do
       use Phoenix.Controller, formats: [:html, :json]
 
-      use Gettext, backend: SelfServiceWeb.Gettext
+      use Gettext, backend: DashboardWeb.Gettext
 
       import Plug.Conn
 
@@ -80,17 +80,17 @@ defmodule SelfServiceWeb do
   defp html_helpers do
     quote do
       # Translation
-      use Gettext, backend: SelfServiceWeb.Gettext
+      use Gettext, backend: DashboardWeb.Gettext
 
       # HTML escaping functionality
       import Phoenix.HTML
       # Core UI components
-      import SelfServiceWeb.CoreComponents
-      import SelfServiceWeb.IslandComponent
+      import DashboardWeb.CoreComponents
+      import DashboardWeb.IslandComponent
 
       # Common modules used in templates
       alias Phoenix.LiveView.JS
-      alias SelfServiceWeb.Layouts
+      alias DashboardWeb.Layouts
 
       # Routes generation with the ~p sigil
       unquote(verified_routes())
@@ -100,9 +100,9 @@ defmodule SelfServiceWeb do
   def verified_routes do
     quote do
       use Phoenix.VerifiedRoutes,
-        endpoint: SelfServiceWeb.Endpoint,
-        router: SelfServiceWeb.Router,
-        statics: SelfServiceWeb.static_paths()
+        endpoint: DashboardWeb.Endpoint,
+        router: DashboardWeb.Router,
+        statics: DashboardWeb.static_paths()
     end
   end
 

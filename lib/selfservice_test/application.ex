@@ -1,4 +1,4 @@
-defmodule SelfService.Application do
+defmodule Dashboard.Application do
   # See https://hexdocs.pm/elixir/Application.html
   # for more information on OTP Applications
   @moduledoc false
@@ -8,32 +8,32 @@ defmodule SelfService.Application do
   @impl true
   def start(_type, _args) do
     children = [
-      SelfServiceWeb.Telemetry,
-      SelfService.Repo,
+      DashboardWeb.Telemetry,
+      Dashboard.Repo,
       {Ecto.Migrator,
-       repos: Application.fetch_env!(:selfservice_test, :ecto_repos), skip: skip_migrations?()},
-      {DNSCluster, query: Application.get_env(:selfservice_test, :dns_cluster_query) || :ignore},
-      {Phoenix.PubSub, name: SelfService.PubSub},
+       repos: Application.fetch_env!(:dashboard_test, :ecto_repos), skip: skip_migrations?()},
+      {DNSCluster, query: Application.get_env(:dashboard_test, :dns_cluster_query) || :ignore},
+      {Phoenix.PubSub, name: Dashboard.PubSub},
       Supervisor.child_spec(
         {PartitionSupervisor,
-         child_spec: SelfService.SSR.Worker,
-         name: SelfService.SSR.Worker.Pool,
+         child_spec: Dashboard.SSR.Worker,
+         name: Dashboard.SSR.Worker.Pool,
          partitions:
-           Application.get_env(:selfservice_test, SelfService.SSR.Worker)[:pool_size] ||
+           Application.get_env(:dashboard_test, Dashboard.SSR.Worker)[:pool_size] ||
              System.schedulers_online()},
         # When the pool exhausts its own max_restarts, let it die quietly
         # rather than crashing the Phoenix application. SSR degrades to CSR.
         restart: :temporary
       ),
-      # Start a worker by calling: SelfService.Worker.start_link(arg)
-      # {SelfService.Worker, arg},
+      # Start a worker by calling: Dashboard.Worker.start_link(arg)
+      # {Dashboard.Worker, arg},
       # Start to serve requests, typically the last entry
-      SelfServiceWeb.Endpoint
+      DashboardWeb.Endpoint
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
-    opts = [strategy: :one_for_one, name: SelfService.Supervisor]
+    opts = [strategy: :one_for_one, name: Dashboard.Supervisor]
     Supervisor.start_link(children, opts)
   end
 
@@ -41,7 +41,7 @@ defmodule SelfService.Application do
   # whenever the application is updated.
   @impl true
   def config_change(changed, _new, removed) do
-    SelfServiceWeb.Endpoint.config_change(changed, removed)
+    DashboardWeb.Endpoint.config_change(changed, removed)
     :ok
   end
 

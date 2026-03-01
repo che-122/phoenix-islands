@@ -1,8 +1,8 @@
 import components from 'virtual:components'
 import { init } from "./runtime/hydration"
-import { hydrate } from "svelte"
+import { hydrate, Component, unmount } from "svelte"
 
-init({
+init<Component>({
   resolve: async (name) => {
     const importFn = components[name];
     if (!importFn) throw new Error(`Component not found: ${name}`);
@@ -11,6 +11,9 @@ init({
   },
   hydrate: (Component, { target, props }) => {
     hydrate(Component, { target, props })
+  },
+  destroy: (component) => {
+    unmount(component)
   }
 })
 

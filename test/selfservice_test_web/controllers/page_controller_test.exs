@@ -1,5 +1,5 @@
-defmodule SelfServiceWeb.PageControllerTest do
-  use SelfServiceWeb.ConnCase
+defmodule DashboardWeb.PageControllerTest do
+  use DashboardWeb.ConnCase
 
   test "GET /", %{conn: conn} do
     conn = get(conn, ~p"/")

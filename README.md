@@ -1,4 +1,4 @@
-# SelfService
+# Dashboard
 
 To start your Phoenix server:
 

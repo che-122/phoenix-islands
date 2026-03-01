@@ -1,4 +1,4 @@
-defmodule SelfServiceWeb.CoreComponents do
+defmodule DashboardWeb.CoreComponents do
   @moduledoc """
   Provides core UI components.
 
@@ -27,7 +27,7 @@ defmodule SelfServiceWeb.CoreComponents do
 
   """
   use Phoenix.Component
-  use Gettext, backend: SelfServiceWeb.Gettext
+  use Gettext, backend: DashboardWeb.Gettext
 
   @doc """
   Renders flash notices.
@@ -432,9 +432,9 @@ defmodule SelfServiceWeb.CoreComponents do
     # with our gettext backend as first argument. Translations are
     # available in the errors.po file (as we use the "errors" domain).
     if count = opts[:count] do
-      Gettext.dngettext(SelfServiceWeb.Gettext, "errors", msg, msg, count, opts)
+      Gettext.dngettext(DashboardWeb.Gettext, "errors", msg, msg, count, opts)
     else
-      Gettext.dgettext(SelfServiceWeb.Gettext, "errors", msg, opts)
+      Gettext.dgettext(DashboardWeb.Gettext, "errors", msg, opts)
     end
   end
 

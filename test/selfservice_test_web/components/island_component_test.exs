@@ -1,8 +1,8 @@
-defmodule SelfServiceWeb.IslandComponentTest do
-  use SelfServiceWeb.ConnCase
+defmodule DashboardWeb.IslandComponentTest do
+  use DashboardWeb.ConnCase
 
   import Phoenix.LiveViewTest
-  import SelfServiceWeb.IslandComponent
+  import DashboardWeb.IslandComponent
 
   test "renders a island web component with module and props" do
     html = render_component(&island/1, module: "CartTotal", props: %{total: 123, currency: "SEK"}, lazy: true)

@@ -7,24 +7,24 @@
 # General application configuration
 import Config
 
-config :selfservice_test,
-  namespace: SelfService,
-  ecto_repos: [SelfService.Repo],
+config :dashboard_test,
+  namespace: Dashboard,
+  ecto_repos: [Dashboard.Repo],
   generators: [timestamp_type: :utc_datetime, binary_id: true]
 
 # Configures the endpoint
-config :selfservice_test, SelfServiceWeb.Endpoint,
+config :dashboard_test, DashboardWeb.Endpoint,
   url: [host: "localhost"],
   adapter: Bandit.PhoenixAdapter,
   render_errors: [
-    formats: [html: SelfServiceWeb.ErrorHTML, json: SelfServiceWeb.ErrorJSON],
+    formats: [html: DashboardWeb.ErrorHTML, json: DashboardWeb.ErrorJSON],
     layout: false
   ],
-  pubsub_server: SelfService.PubSub,
+  pubsub_server: Dashboard.PubSub,
   live_view: [signing_salt: "2TzUMSHY"]
 
 # Configure node/SSR rendering
-config :selfservice_test, SelfService.SSR.Worker,
+config :dashboard_test, Dashboard.SSR.Worker,
   worker_path: "priv/static/assets/ssr/ssr_worker.js",
   runtime: "node",
   pool_size: 4
@@ -36,12 +36,12 @@ config :selfservice_test, SelfService.SSR.Worker,
 #
 # For production it's recommended to configure a different adapter
 # at the `config/runtime.exs`.
-config :selfservice_test, SelfService.Mailer, adapter: Swoosh.Adapters.Local
+config :dashboard_test, Dashboard.Mailer, adapter: Swoosh.Adapters.Local
 
 # Configure tailwind (the version is required)
 config :tailwind,
   version: "4.1.7",
-  selfservice_test: [
+  dashboard_test: [
     args: ~w(
       --input=assets/css/app.css
       --output=priv/static/assets/css/app.css

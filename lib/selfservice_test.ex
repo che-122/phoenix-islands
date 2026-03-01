@@ -1,6 +1,6 @@
-defmodule SelfService do
+defmodule Dashboard do
   @moduledoc """
-  SelfService keeps the contexts that define your domain
+  Dashboard keeps the contexts that define your domain
   and business logic.
 
   Contexts are also responsible for managing your data, regardless
