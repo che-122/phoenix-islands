@@ -2,7 +2,6 @@ defmodule Dashboard.RSS do
   @moduledoc """
   The RSS context.
   """
-  @time_limit 60 * 60
 
   import Ecto.Query, warn: false
   alias Dashboard.Repo
@@ -43,13 +42,22 @@ defmodule Dashboard.RSS do
   end
 
   def list_feed(:due_for_update) do
-    {:ok, now} = DateTime.now("Etc/UTC")
-    overdue = DateTime.add(now, -@time_limit, :second)
+    now = NaiveDateTime.utc_now()
 
-    from(
-      feed_sources in Feed,
-      where: feed_sources.updated_at < ^overdue,
-      select: feed_sources
+    from(f in Feed,
+      where: f.status in [:active, :dormant],
+      where: f.next_fetch <= ^now or is_nil(f.next_fetch),
+      order_by: [asc: f.next_fetch]
+    )
+    |> Repo.all()
+  end
+
+  def list_feed(:suspended_for_reprobe) do
+    now = NaiveDateTime.utc_now()
+
+    from(f in Feed,
+      where: f.status == :suspended,
+      where: f.next_fetch <= ^now
     )
     |> Repo.all()
   end

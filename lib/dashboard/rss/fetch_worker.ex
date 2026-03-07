@@ -1,46 +1,106 @@
 defmodule Dashboard.RSS.FetchWorker do
   @moduledoc """
-  A module responsible for fetching and verifying updates for feed sources.
+  Responsible for fetching feed sources via HTTP with proper revalidation.
 
-  This module performs the following tasks:
+  Uses conditional requests (ETag, Last-Modified) and returns rich result
+  tuples that the IngestService can use for scheduling decisions.
 
-  - Takes a feed source struct (`%Feed{}`).
-  - Makes an HTTP GET request with cache headers if they exist.
+  ## Return types
 
-  ## Responses:
-
-  - **200 OK**:
-    - Checks if the response headers match the cached headers to verify if the feed has been updated.
-    - Returns `{:ok, feed, response}` if the feed has been updated.
-    - Returns `{:not_modified, feed}` if the feed has not been updated.
-  - **304 Not Modified**:
-    - Returns `{:not_modified, feed}` indicating the feed has not changed.
-  - **Error**:
-    - Returns `{:error, reason}` indicating an error occurred during the request.
-
-  ## Example:
-      iex> Dashboard.RSS.FetchWorker.fetch_feed(feed)
-      {:ok, feed, %HTTPoison.Response{...}}
+  - `{:ok, feed, response}` — 200 OK, content available for processing
+  - `{:not_modified, feed, response}` — 304 Not Modified
+  - `{:redirect, feed, new_url, response}` — 301/308 permanent redirect
+  - `{:rate_limited, feed, response}` — 429 Too Many Requests
+  - `{:server_error, feed, status, response}` — 5xx server errors
+  - `{:gone, feed, response}` — 410 Gone
+  - `{:not_found, feed, response}` — 404 Not Found
+  - `{:error, feed, reason}` — network/TLS/DNS failure
   """
 
   alias Dashboard.RSS.Feed
   alias Dashboard.HttpUtils
 
+  @user_agent "Dashboard/1.0 (RSS feed bot)"
+
   def fetch_feed(%Feed{} = feed) do
-    IO.inspect(feed.url)
+    url = feed.canonical_url || feed.url
 
     headers =
       %{}
       |> HttpUtils.make_headers("If-Modified-Since", feed.last_modified)
       |> HttpUtils.make_headers("If-None-Match", feed.etag)
+      |> Map.put("User-Agent", @user_agent)
+      |> Map.put("Accept-Encoding", "gzip, deflate")
+      |> Map.to_list()
 
-    with {:ok, response} <- HTTPoison.get(feed.url, headers, follow_redirect: true),
-         :modified <- check_is_modified(response, feed) do
-      {:ok, feed, response}
-    else
-      :not_modified -> {:not_modified, feed}
-      {:error, error} -> {:error, error}
+    case HTTPoison.get(url, headers, recv_timeout: 15_000, timeout: 15_000) do
+      {:ok, %HTTPoison.Response{} = response} ->
+        classify_response(feed, response)
+
+      {:error, %HTTPoison.Error{reason: reason}} ->
+        {:error, feed, reason}
     end
+  end
+
+  defp classify_response(feed, %HTTPoison.Response{status_code: 200} = response) do
+    body = maybe_decompress(response)
+    response = %{response | body: body}
+
+    case check_is_modified(response, feed) do
+      :modified -> {:ok, feed, response}
+      :not_modified -> {:not_modified, feed, response}
+    end
+  end
+
+  defp classify_response(feed, %HTTPoison.Response{status_code: 304} = response) do
+    {:not_modified, feed, response}
+  end
+
+  defp classify_response(feed, %HTTPoison.Response{status_code: status} = response)
+       when status in [301, 308] do
+    new_url = HttpUtils.extract_header("location", response)
+
+    if new_url do
+      {:redirect, feed, new_url, response}
+    else
+      # Redirect without Location header, treat as error
+      {:error, feed, :redirect_without_location}
+    end
+  end
+
+  # Temporary redirects — follow them but don't update canonical
+  defp classify_response(feed, %HTTPoison.Response{status_code: status} = response)
+       when status in [302, 307] do
+    new_url = HttpUtils.extract_header("location", response)
+
+    if new_url do
+      # Re-fetch at the temporary URL
+      temp_feed = %{feed | canonical_url: new_url}
+      fetch_feed(temp_feed)
+    else
+      {:error, feed, :redirect_without_location}
+    end
+  end
+
+  defp classify_response(feed, %HTTPoison.Response{status_code: 429} = response) do
+    {:rate_limited, feed, response}
+  end
+
+  defp classify_response(feed, %HTTPoison.Response{status_code: 410} = response) do
+    {:gone, feed, response}
+  end
+
+  defp classify_response(feed, %HTTPoison.Response{status_code: 404} = response) do
+    {:not_found, feed, response}
+  end
+
+  defp classify_response(feed, %HTTPoison.Response{status_code: status} = response)
+       when status >= 500 do
+    {:server_error, feed, status, response}
+  end
+
+  defp classify_response(feed, %HTTPoison.Response{status_code: status} = _response) do
+    {:error, feed, {:unexpected_status, status}}
   end
 
   defp check_is_modified(%HTTPoison.Response{} = response, %Feed{} = feed) do
@@ -48,17 +108,25 @@ defmodule Dashboard.RSS.FetchWorker do
     response_last_modified = HttpUtils.extract_header("last-modified", response)
 
     cond do
-      response.status_code == 304 ->
+      HttpUtils.matching_headers?(response_etag, feed.etag) ->
         :not_modified
 
       HttpUtils.matching_headers?(response_last_modified, feed.last_modified) ->
         :not_modified
 
-      HttpUtils.matching_headers?(response_etag, feed.etag) ->
-        :not_modified
-
       true ->
         :modified
+    end
+  end
+
+  defp maybe_decompress(%HTTPoison.Response{} = response) do
+    content_encoding =
+      HttpUtils.extract_header("content-encoding", response)
+
+    case content_encoding do
+      "gzip" -> :zlib.gunzip(response.body)
+      "deflate" -> :zlib.uncompress(response.body)
+      _ -> response.body
     end
   end
 end

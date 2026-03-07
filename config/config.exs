@@ -57,6 +57,21 @@ config :logger, :default_formatter,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+# RSS Backoff configuration
+config :dashboard, Dashboard.RSS.Backoff,
+  # 1 hour
+  default_interval: 60 * 60,
+  # 5 minutes
+  min_interval: 5 * 60,
+  # 24 hours
+  max_interval: 24 * 60 * 60,
+  no_change_multiplier: 1.5,
+  # 15 minutes
+  error_base_interval: 15 * 60,
+  # 7 days
+  error_max_interval: 7 * 24 * 60 * 60,
+  jitter_percent: 10
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"
