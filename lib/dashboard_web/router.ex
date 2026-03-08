@@ -18,6 +18,9 @@ defmodule DashboardWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+    get "/list", PageController, :list
+    get "/list/:feed_id/entries", PageController, :entries
+    get "/list/:feed_id/entries/:entry_id", PageController, :entry
   end
 
   # Other scopes may use custom stacks.

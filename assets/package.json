@@ -16,5 +16,8 @@
     "esbuild": "^0.27.3",
     "esbuild-svelte": "^0.9.4",
     "svelte": "^5.53.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/typography": "^0.5.19"
   }
 }

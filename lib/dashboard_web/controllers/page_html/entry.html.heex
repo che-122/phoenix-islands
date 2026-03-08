@@ -1,0 +1,61 @@
+<article class="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
+  <nav class="mb-6 text-sm text-base-content/70">
+    <a
+      href={~p"/list/#{@feed.id}/entries"}
+      class="underline decoration-base-300 underline-offset-2 hover:decoration-base-content"
+    >
+      Back to entries
+    </a>
+  </nav>
+
+  <header class="mb-8">
+    <p class="text-xs uppercase tracking-wide text-base-content/60">Article</p>
+    <h1 class="mt-2 text-3xl font-semibold tracking-tight text-base-content">
+      {@entry.title || "(untitled)"}
+    </h1>
+    <p class="mt-2 text-sm text-base-content/60">
+      <%= if @entry.published_at do %>
+        Published {Calendar.strftime(@entry.published_at, "%Y-%m-%d %H:%M")}
+      <% else %>
+        Publication date unavailable
+      <% end %>
+    </p>
+  </header>
+
+  <% media_enclosure =
+    Enum.find(
+      @entry.enclosures,
+      &(&1.media_type && String.starts_with?(&1.media_type, "audio/"))
+    ) ||
+      Enum.find(
+        @entry.enclosures,
+        &(&1.media_type && String.starts_with?(&1.media_type, "video/"))
+      ) %>
+
+  <%= if media_enclosure && String.starts_with?(media_enclosure.media_type || "", "audio/") do %>
+    <div class="mb-6 rounded-xl border border-base-300 bg-base-100 p-4 shadow-sm">
+      <audio controls preload="none" class="w-full">
+        <source src={media_enclosure.url} type={media_enclosure.media_type} />
+      </audio>
+    </div>
+  <% end %>
+
+  <%= if media_enclosure && String.starts_with?(media_enclosure.media_type || "", "video/") do %>
+    <div class="mb-6 overflow-hidden rounded-xl border border-base-300 bg-base-100 shadow-sm">
+      <video controls preload="metadata" class="aspect-video w-full bg-black">
+        <source src={media_enclosure.url} type={media_enclosure.media_type} />
+      </video>
+    </div>
+  <% end %>
+
+  <section class="prose prose-invert">
+    <%= cond do %>
+      <% @entry.content && String.trim(@entry.content) != "" -> %>
+        {Phoenix.HTML.raw(HtmlSanitizeEx.basic_html(@entry.content))}
+      <% @entry.summary && String.trim(@entry.summary) != "" -> %>
+        {Phoenix.HTML.raw(HtmlSanitizeEx.basic_html(@entry.summary))}
+      <% true -> %>
+        No content available for this entry.
+    <% end %>
+  </section>
+</article>

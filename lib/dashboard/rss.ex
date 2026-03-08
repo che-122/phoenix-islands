@@ -106,6 +106,13 @@ defmodule Dashboard.RSS do
     |> Repo.all()
   end
 
+  def get_feed_entry!(feed_id, entry_id) when is_binary(feed_id) and is_binary(entry_id) do
+    FeedEntry
+    |> where([e], e.feed_id == ^feed_id and e.id == ^entry_id)
+    |> preload([:enclosures])
+    |> Repo.one!()
+  end
+
   @doc """
   Gets a single feed.
 

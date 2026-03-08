@@ -66,7 +66,8 @@ defmodule Dashboard.MixProject do
       {:dns_cluster, "~> 0.2.0"},
       {:bandit, "~> 1.5"},
       {:gluttony, "~> 0.3.0"},
-      {:httpoison, "~> 2.3.0"}
+      {:httpoison, "~> 2.3.0"},
+      {:html_sanitize_ex, "~> 1.4"}
     ]
   end
 

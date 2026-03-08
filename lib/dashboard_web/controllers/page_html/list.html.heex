@@ -1,0 +1,62 @@
+<.island module="hello" />
+
+<hr />
+<div class="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+  <div class="mb-6">
+    <h1 class="text-2xl font-semibold tracking-tight text-base-content">Feeds</h1>
+    <p class="mt-1 text-sm text-base-content/70">All subscribed RSS feeds</p>
+  </div>
+
+  <div class="overflow-hidden rounded-xl border border-base-300 bg-base-100 shadow-sm">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-base-200 text-left text-sm">
+        <thead class="bg-base-200/50 text-xs font-semibold uppercase tracking-wide text-base-content/70">
+          <tr>
+            <th scope="col" class="px-4 py-3">Title</th>
+            <th scope="col" class="px-4 py-3">Status</th>
+            <th scope="col" class="px-4 py-3">Updated</th>
+            <th scope="col" class="px-4 py-3">Entries</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-base-200">
+          <%= for feed <- @feeds do %>
+            <tr class="transition-colors hover:bg-base-200/40">
+              <td class="px-4 py-3 font-medium text-base-content">
+                <a
+                  href={~p"/list/#{feed.id}/entries"}
+                  class="underline decoration-base-300 underline-offset-2 hover:decoration-base-content"
+                >
+                  {feed.title}
+                </a>
+              </td>
+              <td class="px-4 py-3">
+                <span class="inline-flex rounded-full bg-base-200 px-2.5 py-1 text-xs font-medium capitalize text-base-content/80">
+                  {feed.status}
+                </span>
+              </td>
+              <td class="px-4 py-3 text-base-content/70">
+                {Calendar.strftime(feed.updated_at, "%Y-%m-%d %H:%M")}
+              </td>
+              <td class="px-4 py-3">
+                <a
+                  href={~p"/list/#{feed.id}/entries"}
+                  class="text-sm font-medium text-base-content/80 underline decoration-base-300 underline-offset-2 hover:decoration-base-content"
+                >
+                  View entries
+                </a>
+              </td>
+            </tr>
+          <% end %>
+
+          <%= if @feeds == [] do %>
+            <tr>
+              <td colspan="4" class="px-4 py-8 text-center text-base-content/60">
+                No feeds found.
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

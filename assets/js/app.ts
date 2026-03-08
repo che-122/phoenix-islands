@@ -25,3 +25,13 @@ document.querySelectorAll("[role=alert][data-flash]").forEach((el) => {
     el.setAttribute("hidden", "")
   })
 })
+
+declare global {
+  interface Window {
+    Turbo: {
+      start: () => void
+    }
+  }
+}
+
+window.Turbo.start()

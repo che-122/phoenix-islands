@@ -1,0 +1,71 @@
+<div class="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+  <div class="mb-6 flex items-center justify-between gap-4">
+    <div>
+      <p class="text-xs uppercase tracking-wide text-base-content/60">Feed entries</p>
+      <h1 class="text-2xl font-semibold tracking-tight text-base-content">{@feed.title}</h1>
+    </div>
+    <a
+      href={~p"/list"}
+      class="rounded-lg border border-base-300 px-3 py-2 text-sm font-medium text-base-content/80 transition-colors hover:bg-base-200"
+    >
+      Back to feeds
+    </a>
+  </div>
+
+  <div class="overflow-hidden rounded-xl border border-base-300 bg-base-100 shadow-sm">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-base-200 text-left text-sm">
+        <thead class="bg-base-200/50 text-xs font-semibold uppercase tracking-wide text-base-content/70">
+          <tr>
+            <th scope="col" class="px-4 py-3">Title</th>
+            <th scope="col" class="px-4 py-3">Published</th>
+            <th scope="col" class="px-4 py-3">Link</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-base-200">
+          <%= for entry <- @entries do %>
+            <tr class="transition-colors hover:bg-base-200/40">
+              <td class="px-4 py-3 font-medium text-base-content">
+                <a
+                  href={~p"/list/#{@feed.id}/entries/#{entry.id}"}
+                  class="underline decoration-base-300 underline-offset-2 hover:decoration-base-content"
+                >
+                  {entry.title || "(untitled)"}
+                </a>
+              </td>
+              <td class="px-4 py-3 text-base-content/70">
+                <%= if entry.published_at do %>
+                  {Calendar.strftime(entry.published_at, "%Y-%m-%d %H:%M")}
+                <% else %>
+                  -
+                <% end %>
+              </td>
+              <td class="px-4 py-3 text-base-content/80">
+                <%= if entry.link do %>
+                  <a
+                    href={entry.link}
+                    class="underline decoration-base-300 underline-offset-2 hover:decoration-base-content"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Open
+                  </a>
+                <% else %>
+                  -
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+
+          <%= if @entries == [] do %>
+            <tr>
+              <td colspan="3" class="px-4 py-8 text-center text-base-content/60">
+                No entries found for this feed.
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
