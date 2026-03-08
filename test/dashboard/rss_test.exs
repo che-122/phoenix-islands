@@ -8,7 +8,15 @@ defmodule Dashboard.RSSTest do
 
     import Dashboard.RSSFixtures
 
-    @invalid_attrs %{description: nil, title: nil, author: nil, last_modified: nil, etag: nil, next_fetch: nil, favicon: nil}
+    @invalid_attrs %{
+      description: nil,
+      title: nil,
+      author: nil,
+      last_modified: nil,
+      etag: nil,
+      next_fetch: nil,
+      favicon: nil
+    }
 
     test "list_feed/0 returns all feed" do
       feed = feed_fixture()
@@ -21,7 +29,16 @@ defmodule Dashboard.RSSTest do
     end
 
     test "create_feed/1 with valid data creates a feed" do
-      valid_attrs = %{description: "some description", title: "some title", author: "some author", last_modified: "some last_modified", etag: "some etag", next_fetch: ~N[2026-02-28 18:10:00], favicon: "some favicon"}
+      valid_attrs = %{
+        description: "some description",
+        title: "some title",
+        author: "some author",
+        url: "https://example.com/feed.xml",
+        last_modified: "some last_modified",
+        etag: "some etag",
+        next_fetch: ~U[2026-02-28 18:10:00Z],
+        favicon: "some favicon"
+      }
 
       assert {:ok, %Feed{} = feed} = RSS.create_feed(valid_attrs)
       assert feed.description == "some description"
@@ -29,7 +46,7 @@ defmodule Dashboard.RSSTest do
       assert feed.author == "some author"
       assert feed.last_modified == "some last_modified"
       assert feed.etag == "some etag"
-      assert feed.next_fetch == ~N[2026-02-28 18:10:00]
+      assert feed.next_fetch == ~U[2026-02-28 18:10:00Z]
       assert feed.favicon == "some favicon"
     end
 
@@ -39,7 +56,17 @@ defmodule Dashboard.RSSTest do
 
     test "update_feed/2 with valid data updates the feed" do
       feed = feed_fixture()
-      update_attrs = %{description: "some updated description", title: "some updated title", author: "some updated author", last_modified: "some updated last_modified", etag: "some updated etag", next_fetch: ~N[2026-03-01 18:10:00], favicon: "some updated favicon"}
+
+      update_attrs = %{
+        description: "some updated description",
+        title: "some updated title",
+        author: "some updated author",
+        url: "https://example.com/updated-feed.xml",
+        last_modified: "some updated last_modified",
+        etag: "some updated etag",
+        next_fetch: ~U[2026-03-01 18:10:00Z],
+        favicon: "some updated favicon"
+      }
 
       assert {:ok, %Feed{} = feed} = RSS.update_feed(feed, update_attrs)
       assert feed.description == "some updated description"
@@ -47,7 +74,7 @@ defmodule Dashboard.RSSTest do
       assert feed.author == "some updated author"
       assert feed.last_modified == "some updated last_modified"
       assert feed.etag == "some updated etag"
-      assert feed.next_fetch == ~N[2026-03-01 18:10:00]
+      assert feed.next_fetch == ~U[2026-03-01 18:10:00Z]
       assert feed.favicon == "some updated favicon"
     end
 

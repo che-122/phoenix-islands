@@ -42,7 +42,7 @@ defmodule Dashboard.RSS do
   end
 
   def list_feed(:due_for_update) do
-    now = NaiveDateTime.utc_now()
+    now = DateTime.utc_now()
 
     from(f in Feed,
       where: f.status in [:active, :dormant],
@@ -53,7 +53,7 @@ defmodule Dashboard.RSS do
   end
 
   def list_feed(:suspended_for_reprobe) do
-    now = NaiveDateTime.utc_now()
+    now = DateTime.utc_now()
 
     from(f in Feed,
       where: f.status == :suspended,

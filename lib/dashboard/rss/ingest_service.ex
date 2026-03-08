@@ -151,12 +151,14 @@ defmodule Dashboard.RSS.IngestService do
   end
 
   defp handle_redirect(%Feed{} = feed, new_url, %HTTPoison.Response{} = response) do
+    next_fetch = Backoff.calculate_redirect_next(feed, response)
+
     # Update canonical URL and schedule immediate re-fetch
     save_polling_update(feed, %{
       canonical_url: new_url,
       last_http_status: response.status_code,
       last_fetched_at: DateTime.utc_now(),
-      next_fetch: NaiveDateTime.utc_now()
+      next_fetch: next_fetch
     })
   end
 

@@ -50,7 +50,7 @@ defmodule Dashboard.RSS.Backoff do
   @doc """
   Calculates the next fetch time based on feed state, HTTP response, and outcome.
 
-  Returns a `NaiveDateTime` representing when the feed should next be fetched.
+  Returns a UTC `DateTime` representing when the feed should next be fetched.
 
   ## Outcomes
 
@@ -62,8 +62,17 @@ defmodule Dashboard.RSS.Backoff do
     interval = compute_interval(feed, response, outcome)
     interval_with_jitter = apply_jitter(interval)
 
-    NaiveDateTime.utc_now()
-    |> NaiveDateTime.add(interval_with_jitter, :second)
+    DateTime.utc_now()
+    |> DateTime.add(interval_with_jitter, :second)
+  end
+
+  @doc """
+  Calculates the next fetch time after a redirect response.
+
+  Redirects are retried immediately using the feed's updated canonical URL.
+  """
+  def calculate_redirect_next(%Feed{}, %HTTPoison.Response{}) do
+    DateTime.utc_now()
   end
 
   @doc """
@@ -231,7 +240,7 @@ defmodule Dashboard.RSS.Backoff do
 
   defp current_interval(%Feed{last_fetched_at: last_fetched, next_fetch: next_fetch})
        when not is_nil(next_fetch) do
-    NaiveDateTime.diff(next_fetch, NaiveDateTime.from_iso8601!(DateTime.to_iso8601(last_fetched)))
+    DateTime.diff(next_fetch, last_fetched, :second)
   end
 
   defp current_interval(_feed), do: nil

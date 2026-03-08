@@ -5,7 +5,12 @@ defmodule DashboardWeb.IslandComponentTest do
   import DashboardWeb.IslandComponent
 
   test "renders a island web component with module and props" do
-    html = render_component(&island/1, module: "CartTotal", props: %{total: 123, currency: "SEK"}, lazy: true)
+    html =
+      render_component(&island/1,
+        module: "CartTotal",
+        props: %{total: 123, currency: "SEK"},
+        lazy: true
+      )
 
     assert html =~ "<island-root"
     assert html =~ "data-module=\"CartTotal\""
@@ -25,10 +30,15 @@ defmodule DashboardWeb.IslandComponentTest do
   end
 
   test "escapes json" do
-    html = render_component(&island/1, module: "CartTotal", props: %{danger: "</island-root><script>alert(1)</script>"})
+    html =
+      render_component(&island/1,
+        module: "CartTotal",
+        props: %{danger: "</island-root><script>alert(1)</script>"}
+      )
 
     refute html =~ "<script>alert(1)</script>"
     # Escaped data is passed along
-    assert html =~ "data-props=\"{&quot;danger&quot;:&quot;&lt;/island-root&gt;&lt;script&gt;alert(1)&lt;/script&gt;&quot;}\""
+    assert html =~
+             "data-props=\"{&quot;danger&quot;:&quot;&lt;/island-root&gt;&lt;script&gt;alert(1)&lt;/script&gt;&quot;}\""
   end
 end

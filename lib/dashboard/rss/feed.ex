@@ -12,7 +12,7 @@ defmodule Dashboard.RSS.Feed do
     field :link, :string
     field :last_modified, :string
     field :etag, :string
-    field :next_fetch, :naive_datetime
+    field :next_fetch, :utc_datetime
     field :favicon, :string
 
     # Polling state

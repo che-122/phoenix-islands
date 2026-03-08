@@ -11,7 +11,7 @@ defmodule Dashboard.Repo.Migrations.CreateFeed do
       add :url, :string
       add :last_modified, :string
       add :etag, :string
-      add :next_fetch, :naive_datetime
+      add :next_fetch, :utc_datetime
       add :favicon, :string
 
       timestamps(type: :utc_datetime)
