@@ -184,6 +184,7 @@ defmodule Dashboard.RSS.IngestService do
   end
 
   defp handle_error(%Feed{} = feed, response, reason) do
+    normalized_error = normalize_error(reason, response)
     error_count = (feed.error_count || 0) + 1
     updated_feed = %{feed | error_count: error_count}
 
@@ -193,20 +194,26 @@ defmodule Dashboard.RSS.IngestService do
         _ -> feed.last_http_status
       end
 
-    next_fetch = Backoff.calculate_next(updated_feed, response, {:error, reason})
+    next_fetch = Backoff.calculate_next(updated_feed, response, {:error, normalized_error})
     new_status = Backoff.evaluate_health(updated_feed)
 
     :telemetry.execute(
       [:dashboard, :rss, :fetch],
       %{duration: 0},
-      %{feed_id: feed.id, status: :error, reason: reason, http_status: http_status}
+      %{
+        feed_id: feed.id,
+        status: :error,
+        error_class: normalized_error.class,
+        reason: normalized_error.reason,
+        http_status: http_status
+      }
     )
 
     emit_status_change_if_needed(feed, new_status)
 
     suspension_reason =
       if new_status == :suspended do
-        error_reason_string(reason)
+        error_reason_string(normalized_error)
       else
         feed.suspension_reason
       end
@@ -394,17 +401,71 @@ defmodule Dashboard.RSS.IngestService do
   end
 
   defp get_feed(%Feed{} = feed) do
-    FetchWorker.fetch_feed(feed)
+    fetch_worker().fetch_feed(feed)
   end
 
   defp parse_feed(%HTTPoison.Response{} = response) do
-    Gluttony.parse_string(response.body)
+    feed_parser().parse_string(response.body)
   end
 
-  defp error_reason_string(:rate_limited), do: "Rate limited (429)"
-  defp error_reason_string(:not_found), do: "Not found (404) for extended period"
-  defp error_reason_string(:parse_failure), do: "Repeated parse failures"
-  defp error_reason_string({:server_error, status}), do: "Server error (#{status})"
-  defp error_reason_string({:network, reason}), do: "Network error: #{inspect(reason)}"
-  defp error_reason_string(other), do: "Error: #{inspect(other)}"
+  defp error_reason_string(error) do
+    case error do
+      %{class: :http, code: 429} ->
+        "Rate limited (429)"
+
+      %{class: :http, code: 404} ->
+        "Not found (404) for extended period"
+
+      %{class: :parse, reason: :parse_failure} ->
+        "Repeated parse failures"
+
+      %{class: :http, code: status} ->
+        "Server error (#{status})"
+
+      %{class: :network, reason: reason} ->
+        "Network error: #{inspect(reason)}"
+
+      %{reason: reason} ->
+        "Error: #{inspect(reason)}"
+
+      other ->
+        "Error: #{inspect(other)}"
+    end
+  end
+
+  defp normalize_error(reason, response) do
+    case {reason, response} do
+      {%{class: _, reason: _} = normalized, _} ->
+        normalized
+
+      {:rate_limited, _} ->
+        %{class: :http, code: 429, reason: :rate_limited}
+
+      {:not_found, _} ->
+        %{class: :http, code: 404, reason: :not_found}
+
+      {:parse_failure, _} ->
+        %{class: :parse, code: nil, reason: :parse_failure}
+
+      {{:network, network_reason}, _} ->
+        %{class: :network, code: nil, reason: network_reason}
+
+      {{:server_error, status}, _} ->
+        %{class: :http, code: status, reason: :server_error}
+
+      {other_reason, %HTTPoison.Response{status_code: status}} ->
+        %{class: :http, code: status, reason: other_reason}
+
+      {other_reason, _} ->
+        %{class: :unknown, code: nil, reason: other_reason}
+    end
+  end
+
+  defp fetch_worker do
+    Application.get_env(:dashboard, :rss_fetch_worker, FetchWorker)
+  end
+
+  defp feed_parser do
+    Application.get_env(:dashboard, :rss_feed_parser, Gluttony)
+  end
 end

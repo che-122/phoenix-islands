@@ -72,6 +72,11 @@ config :dashboard, Dashboard.RSS.Backoff,
   error_max_interval: 7 * 24 * 60 * 60,
   jitter_percent: 10
 
+# RSS ingest dependencies
+config :dashboard,
+  rss_fetch_worker: Dashboard.RSS.FetchWorker,
+  rss_feed_parser: Gluttony
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"

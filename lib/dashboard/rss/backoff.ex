@@ -128,31 +128,38 @@ defmodule Dashboard.RSS.Backoff do
     |> clamp(floor, ceiling)
   end
 
-  defp compute_interval(feed, response, {:error, :rate_limited}) do
-    # Retry-After takes absolute priority on 429
-    retry_after = retry_after_seconds(response)
+  defp compute_interval(feed, response, {:error, error}) do
+    normalized_error =
+      case error do
+        %{reason: _} = normalized -> normalized
+        other -> %{reason: other}
+      end
 
-    if retry_after do
-      clamp(retry_after, config(:min_interval), config(:error_max_interval))
-    else
-      # Aggressive backoff for rate limiting
-      error_backoff(feed.error_count || 0, 60 * 60)
-    end
-  end
+    case normalized_error.reason do
+      :rate_limited ->
+        # Retry-After takes absolute priority on 429
+        retry_after = retry_after_seconds(response)
 
-  defp compute_interval(feed, _response, {:error, :gone}) do
-    # 410 Gone — use reprobe schedule
-    reprobe_interval(feed.error_count || 0)
-  end
+        if retry_after do
+          clamp(retry_after, config(:min_interval), config(:error_max_interval))
+        else
+          # Aggressive backoff for rate limiting
+          error_backoff(feed.error_count || 0, 60 * 60)
+        end
 
-  defp compute_interval(feed, response, {:error, _reason}) do
-    # Check for Retry-After (sometimes present on 503)
-    retry_after = retry_after_seconds(response)
+      :gone ->
+        # 410 Gone — use reprobe schedule
+        reprobe_interval(feed.error_count || 0)
 
-    if retry_after do
-      clamp(retry_after, config(:min_interval), config(:error_max_interval))
-    else
-      error_backoff(feed.error_count || 0, config(:error_base_interval))
+      _ ->
+        # Check for Retry-After (sometimes present on 503)
+        retry_after = retry_after_seconds(response)
+
+        if retry_after do
+          clamp(retry_after, config(:min_interval), config(:error_max_interval))
+        else
+          error_backoff(feed.error_count || 0, config(:error_base_interval))
+        end
     end
   end
 
