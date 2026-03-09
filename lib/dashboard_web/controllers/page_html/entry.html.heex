@@ -5,6 +5,10 @@
   sidebar_entries={@entries}
   selected_feed_id={@feed.id}
   selected_entry_id={@entry.id}
+  entries_page={@page}
+  entries_has_previous_page?={@has_previous_page?}
+  entries_has_next_page?={@has_next_page?}
+  entries_pagination_base_path={@entries_pagination_base_path}
 >
   <article class="mx-auto max-w-4xl">
     <header class="border-b border-base-300 pb-6">
@@ -78,9 +82,13 @@
       <% end %>
     </section>
 
-    <div class="mt-8 flex items-center justify-between rounded-xl border border-base-300 bg-base-100 px-4 py-3 text-sm">
+    <div
+      id="content-entry-pagination"
+      class="mt-8 flex items-center justify-between rounded-xl border border-base-300 bg-base-100 px-4 py-3 text-sm lg:hidden"
+    >
       <%= if @has_previous_page? do %>
         <a
+          id="content-entry-prev"
           href={~p"/list/#{@feed.id}/entries/#{@entry.id}?page=#{@page - 1}"}
           class="rounded-lg border border-base-300 px-3 py-2 font-medium text-base-content/80 transition-colors hover:bg-base-200"
         >
@@ -96,6 +104,7 @@
 
       <%= if @has_next_page? do %>
         <a
+          id="content-entry-next"
           href={~p"/list/#{@feed.id}/entries/#{@entry.id}?page=#{@page + 1}"}
           class="rounded-lg border border-base-300 px-3 py-2 font-medium text-base-content/80 transition-colors hover:bg-base-200"
         >

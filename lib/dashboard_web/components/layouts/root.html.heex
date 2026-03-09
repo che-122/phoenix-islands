@@ -10,8 +10,6 @@
     <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
     <script defer src="https://unpkg.com/swup@4">
     </script>
-    <script defer src="https://unpkg.com/@swup/fade-theme@2">
-    </script>
     <script defer src="https://unpkg.com/@swup/preload-plugin@3">
     </script>
     <script defer src="https://unpkg.com/@swup/forms-plugin@3">
@@ -35,10 +33,12 @@
       })();
     </script>
   </head>
-  <body>
-    <.island module="audioplayer" />
-    <div id="swup">
-      {@inner_content}
+  <body class="h-screen overflow-hidden bg-base-200">
+    <div class="flex h-full min-h-0 flex-col">
+      <.island module="audioplayer" />
+      <div id="swup" class="min-h-0 flex-1 overflow-hidden">
+        {@inner_content}
+      </div>
     </div>
   </body>
 </html>

@@ -96,6 +96,9 @@ defmodule DashboardWeb.PageControllerTest do
 
     assert body =~ feed.title
     assert body =~ "id=\"sidebar-entries\""
+    assert body =~ "id=\"sidebar-entries-pagination\""
+    assert body =~ "id=\"content-entries-pagination\""
+    assert body =~ "lg:hidden"
     assert body =~ "Episode 1"
     assert body =~ ~p"/list/#{feed.id}/entries/#{entry.id}"
   end
@@ -127,6 +130,7 @@ defmodule DashboardWeb.PageControllerTest do
 
     assert page_1_body =~ "Page 1"
     assert page_1_body =~ "Episode 21"
+    assert page_1_body =~ "id=\"sidebar-entries-next\""
     assert page_1_body =~ ~p"/list/#{feed.id}/entries?page=2"
     refute page_1_body =~ ~r/>\s*Episode 1\s*</
 
@@ -171,6 +175,8 @@ defmodule DashboardWeb.PageControllerTest do
     body = html_response(conn, 200)
 
     assert body =~ "Article"
+    assert body =~ "id=\"sidebar-entries-pagination\""
+    assert body =~ "id=\"content-entry-pagination\""
     assert body =~ "Episode detail"
     assert body =~ "A short summary"
     assert body =~ "<audio"

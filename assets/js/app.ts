@@ -29,18 +29,13 @@ document.querySelectorAll("[role=alert][data-flash]").forEach((el) => {
 declare global {
   interface Window {
     Swup: any;
-    // SwupFadeTheme: any;
     SwupPreloadPlugin: any;
     SwupFormsPlugin: any;
   }
 }
 
 const swup = new window.Swup({
-  plugins: [
-    // new window.SwupFadeTheme(),
-    new window.SwupPreloadPlugin(),
-    new window.SwupFormsPlugin(),
-  ],
+  plugins: [new window.SwupPreloadPlugin(), new window.SwupFormsPlugin()],
 });
 
 const normalizePath = (url: string) => {

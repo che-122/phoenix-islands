@@ -45,7 +45,8 @@ defmodule DashboardWeb.PageController do
       entries: entries,
       page: page,
       has_previous_page?: page > 1,
-      has_next_page?: has_next_page?
+      has_next_page?: has_next_page?,
+      entries_pagination_base_path: ~p"/list/#{feed.id}/entries"
     )
   end
 
@@ -63,7 +64,8 @@ defmodule DashboardWeb.PageController do
       entries: entries,
       page: page,
       has_previous_page?: page > 1,
-      has_next_page?: has_next_page?
+      has_next_page?: has_next_page?,
+      entries_pagination_base_path: ~p"/list/#{feed.id}/entries/#{entry.id}"
     )
   end
 

@@ -191,61 +191,74 @@
     {/each}
   </audio>
 
-  <div class="player">
-    <div>
-      <div>{player.current.current.title}</div>
-      <div>{player.current.current.feedTitle}</div>
-      {#if player.current.error}
-        <div>{player.current.error}</div>
-      {/if}
-    </div>
+  <div class="border-b border-base-300 bg-base-100 px-4 py-3 shadow-sm sm:px-6">
+    <div class="mx-auto flex w-full max-w-[120rem] flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <div class="min-w-0">
+        <p class="truncate text-sm font-semibold text-base-content">{player.current.current.title}</p>
+        <p class="truncate text-xs text-base-content/70">{player.current.current.feedTitle}</p>
+        {#if player.current.error}
+          <p class="mt-1 text-xs text-error">{player.current.error}</p>
+        {/if}
+      </div>
 
-    <button
-      type="button"
-      onclick={() =>
-        player.current.status === "playing"
-          ? playerStore.requestPause()
-          : playerStore.requestToggle()}
-    >
-      {#if player.current.status === "playing"}
-        Pause
-      {:else}
-        Play
-      {/if}
-    </button>
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          class="rounded-lg border border-base-300 px-3 py-1.5 text-sm font-medium text-base-content transition-colors hover:bg-base-200"
+          onclick={() =>
+            player.current.status === "playing"
+              ? playerStore.requestPause()
+              : playerStore.requestToggle()}
+        >
+          {#if player.current.status === "playing"}
+            Pause
+          {:else}
+            Play
+          {/if}
+        </button>
 
-    <div>
-      <input
-        type="range"
-        min="0"
-        max={player.current.duration || 0}
-        step="0.1"
-        value={seekValue[0]}
-        oninput={(e) =>
-          onSeekInput([Number((e.currentTarget as HTMLInputElement).value)])}
-      />
+        <button
+          type="button"
+          class="rounded-lg border border-base-300 px-3 py-1.5 text-xs font-medium text-base-content/80 transition-colors hover:bg-base-200"
+          onclick={() => playerStore.requestToggleMute()}
+        >
+          {player.current.muted ? "Unmute" : "Mute"}
+        </button>
+      </div>
 
-      <span>
-        {formatTime(player.current.currentTime)} / {formatTime(
-          player.current.duration,
-        )}
-      </span>
-    </div>
+      <div class="grid grid-cols-1 gap-2 lg:w-[36rem]">
+        <div class="flex items-center gap-2">
+          <input
+            type="range"
+            class="range range-xs w-full"
+            min="0"
+            max={player.current.duration || 0}
+            step="0.1"
+            value={seekValue[0]}
+            oninput={(e) =>
+              onSeekInput([Number((e.currentTarget as HTMLInputElement).value)])}
+          />
+          <span class="w-28 text-right text-xs text-base-content/70">
+            {formatTime(player.current.currentTime)} / {formatTime(
+              player.current.duration,
+            )}
+          </span>
+        </div>
 
-    <div>
-      <button type="button" onclick={() => playerStore.requestToggleMute()}>
-        {player.current.muted ? "Unmute" : "Mute"}
-      </button>
-
-      <input
-        type="range"
-        min="0"
-        max="1"
-        step="0.01"
-        value={volumeValue[0]}
-        oninput={(e) =>
-          onVolumeInput([Number((e.currentTarget as HTMLInputElement).value)])}
-      />
+        <div class="flex items-center gap-2">
+          <span class="w-10 text-xs text-base-content/60">Vol</span>
+          <input
+            type="range"
+            class="range range-xs w-full"
+            min="0"
+            max="1"
+            step="0.01"
+            value={volumeValue[0]}
+            oninput={(e) =>
+              onVolumeInput([Number((e.currentTarget as HTMLInputElement).value)])}
+          />
+        </div>
+      </div>
     </div>
   </div>
 {/if}

@@ -4,6 +4,10 @@
   sidebar_feeds={assigns[:sidebar_feeds] || []}
   sidebar_entries={@entries}
   selected_feed_id={@feed.id}
+  entries_page={@page}
+  entries_has_previous_page?={@has_previous_page?}
+  entries_has_next_page?={@has_next_page?}
+  entries_pagination_base_path={@entries_pagination_base_path}
 >
   <section class="mx-auto max-w-4xl space-y-6">
     <header class="rounded-xl border border-base-300 bg-base-200/40 p-6">
@@ -13,10 +17,13 @@
         Pick an episode from the middle column to open it in this panel.
       </p>
     </header>
-
-    <div class="flex items-center justify-between rounded-xl border border-base-300 bg-base-100 px-4 py-3 text-sm">
+    <div
+      id="content-entries-pagination"
+      class="flex items-center justify-between rounded-xl border border-base-300 bg-base-100 px-4 py-3 text-sm lg:hidden"
+    >
       <%= if @has_previous_page? do %>
         <a
+          id="content-entries-prev"
           href={~p"/list/#{@feed.id}/entries?page=#{@page - 1}"}
           class="rounded-lg border border-base-300 px-3 py-2 font-medium text-base-content/80 transition-colors hover:bg-base-200"
         >
@@ -32,6 +39,7 @@
 
       <%= if @has_next_page? do %>
         <a
+          id="content-entries-next"
           href={~p"/list/#{@feed.id}/entries?page=#{@page + 1}"}
           class="rounded-lg border border-base-300 px-3 py-2 font-medium text-base-content/80 transition-colors hover:bg-base-200"
         >
