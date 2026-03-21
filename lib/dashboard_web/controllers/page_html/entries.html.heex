@@ -5,6 +5,7 @@
   sidebar_entries={@entries}
   selected_feed_id={@feed.id}
   entries_page={@page}
+  main_scroll_stable_key={"entries:#{@feed.id}"}
   entries_has_previous_page?={@has_previous_page?}
   entries_has_next_page?={@has_next_page?}
   entries_pagination_base_path={@entries_pagination_base_path}

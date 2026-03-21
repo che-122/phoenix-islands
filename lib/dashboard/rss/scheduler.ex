@@ -1,10 +1,12 @@
 defmodule Dashboard.RSS.Scheduler do
   use GenServer
 
+  alias Dashboard.RSS.BatchSummary
+  alias Dashboard.RSS.Diagnostics
   alias Dashboard.RSS.IngestService
 
-  # 60 seconds base tick
-  @interval 60 * 1000
+  # 10 seconds base tick
+  @interval 10 * 1000
 
   # Check suspended feeds for reprobe every 6 hours
   @reprobe_interval 6 * 60 * 60 * 1000
@@ -21,7 +23,29 @@ defmodule Dashboard.RSS.Scheduler do
   end
 
   def handle_info(:update, state) do
-    IngestService.update_feeds()
+    started_at = DateTime.utc_now()
+
+    try do
+      runs = IngestService.update_feeds()
+      summary = BatchSummary.build(runs)
+      Diagnostics.record_update(started_at, DateTime.utc_now(), summary, nil)
+    rescue
+      exception ->
+        Diagnostics.record_update(
+          started_at,
+          DateTime.utc_now(),
+          BatchSummary.build([]),
+          Exception.message(exception)
+        )
+    catch
+      kind, reason ->
+        Diagnostics.record_update(
+          started_at,
+          DateTime.utc_now(),
+          BatchSummary.build([]),
+          "#{inspect(kind)}: #{inspect(reason)}"
+        )
+    end
 
     schedule_next_update()
 
@@ -29,8 +53,15 @@ defmodule Dashboard.RSS.Scheduler do
   end
 
   def handle_info(:reprobe, state) do
-    Dashboard.RSS.list_feed(:suspended_for_reprobe)
-    |> Enum.each(&IngestService.update_pipeline/1)
+    started_at = DateTime.utc_now()
+
+    suspended_due = Dashboard.RSS.list_feed(:suspended_for_reprobe)
+    results = Enum.map(suspended_due, &IngestService.update_pipeline/1)
+
+    Diagnostics.record_reprobe(started_at, DateTime.utc_now(), %{
+      due_count: length(suspended_due),
+      ok_count: Enum.count(results, &match?({:ok, _}, &1))
+    })
 
     schedule_reprobe()
 

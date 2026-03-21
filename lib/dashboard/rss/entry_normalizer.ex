@@ -161,8 +161,6 @@ defmodule Dashboard.RSS.EntryNormalizer do
     end
   end
 
-  defp digest(_), do: ""
-
   defp hash_identity(feed_id, identity_source, identity_key) do
     :crypto.hash(:sha256, "#{feed_id}:#{identity_source}:#{identity_key}")
     |> Base.encode16(case: :lower)

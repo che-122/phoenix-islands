@@ -20,9 +20,19 @@ defmodule Dashboard.RSS.IngestService do
   alias Dashboard.HttpUtils
 
   def update_feeds do
-    RSS.list_feed(:due_for_update)
-    |> Task.async_stream(&update_pipeline/1, max_concurrency: 10, timeout: 60_000)
-    |> Enum.to_list()
+    due_feeds = RSS.list_feed(:due_for_update)
+
+    task_results =
+      Task.async_stream(due_feeds, &update_pipeline/1,
+        max_concurrency: 10,
+        timeout: 60_000,
+        on_timeout: :kill_task
+      )
+      |> Enum.to_list()
+
+    due_feeds
+    |> Enum.zip(task_results)
+    |> Enum.map(fn {feed, result} -> %{feed: feed, result: result} end)
   end
 
   def update_pipeline(%Feed{} = feed) do
@@ -55,7 +65,7 @@ defmodule Dashboard.RSS.IngestService do
 
   # --- Pipeline handlers ---
 
-  defp handle_success(%Feed{} = feed, %HTTPoison.Response{} = response) do
+  defp handle_success(%Feed{} = feed, %Req.Response{} = response) do
     case detect_changes(feed, response) do
       {:not_modified, new_hash} ->
         # Body hash unchanged — skip parsing, treat as not_modified
@@ -65,14 +75,14 @@ defmodule Dashboard.RSS.IngestService do
         :telemetry.execute(
           [:dashboard, :rss, :fetch],
           %{duration: 0},
-          %{feed_id: feed.id, status: :not_modified, http_status: response.status_code}
+          %{feed_id: feed.id, status: :not_modified, http_status: response.status}
         )
 
         emit_status_change_if_needed(feed, health_status)
 
         save_polling_update(feed, %{
           content_hash: new_hash,
-          last_http_status: response.status_code,
+          last_http_status: response.status,
           last_fetched_at: DateTime.utc_now(),
           miss_count: (feed.miss_count || 0) + 1,
           error_count: 0,
@@ -94,7 +104,7 @@ defmodule Dashboard.RSS.IngestService do
             :telemetry.execute(
               [:dashboard, :rss, :fetch],
               %{duration: 0},
-              %{feed_id: feed.id, status: :modified, http_status: response.status_code}
+              %{feed_id: feed.id, status: :modified, http_status: response.status}
             )
 
             emit_status_change_if_needed(feed, :active)
@@ -108,7 +118,7 @@ defmodule Dashboard.RSS.IngestService do
               etag: HttpUtils.extract_header("etag", response),
               next_fetch: next_fetch,
               content_hash: new_hash,
-              last_http_status: response.status_code,
+              last_http_status: response.status,
               last_fetched_at: DateTime.utc_now(),
               last_new_item_at: DateTime.utc_now(),
               miss_count: 0,
@@ -127,14 +137,14 @@ defmodule Dashboard.RSS.IngestService do
     end
   end
 
-  defp handle_not_modified(%Feed{} = feed, %HTTPoison.Response{} = response) do
+  defp handle_not_modified(%Feed{} = feed, %Req.Response{} = response) do
     next_fetch = Backoff.calculate_next(feed, response, :not_modified)
     health_status = Backoff.evaluate_health(feed)
 
     :telemetry.execute(
       [:dashboard, :rss, :fetch],
       %{duration: 0},
-      %{feed_id: feed.id, status: :not_modified, http_status: response.status_code}
+      %{feed_id: feed.id, status: :not_modified, http_status: response.status}
     )
 
     emit_status_change_if_needed(feed, health_status)
@@ -151,19 +161,19 @@ defmodule Dashboard.RSS.IngestService do
     })
   end
 
-  defp handle_redirect(%Feed{} = feed, new_url, %HTTPoison.Response{} = response) do
+  defp handle_redirect(%Feed{} = feed, new_url, %Req.Response{} = response) do
     next_fetch = Backoff.calculate_redirect_next(feed, response)
 
     # Update canonical URL and schedule immediate re-fetch
     save_polling_update(feed, %{
       canonical_url: new_url,
-      last_http_status: response.status_code,
+      last_http_status: response.status,
       last_fetched_at: DateTime.utc_now(),
       next_fetch: next_fetch
     })
   end
 
-  defp handle_gone(%Feed{} = feed, %HTTPoison.Response{} = response) do
+  defp handle_gone(%Feed{} = feed, %Req.Response{} = response) do
     next_fetch = Backoff.calculate_next(feed, response, {:error, :gone})
 
     :telemetry.execute(
@@ -191,7 +201,7 @@ defmodule Dashboard.RSS.IngestService do
 
     http_status =
       case response do
-        %HTTPoison.Response{status_code: code} -> code
+        %Req.Response{status: code} -> code
         _ -> feed.last_http_status
       end
 
@@ -231,7 +241,7 @@ defmodule Dashboard.RSS.IngestService do
 
   # --- Change detection ---
 
-  defp detect_changes(%Feed{} = feed, %HTTPoison.Response{} = response) do
+  defp detect_changes(%Feed{} = feed, %Req.Response{} = response) do
     new_hash =
       :crypto.hash(:sha256, response.body)
       |> Base.encode16(case: :lower)
@@ -312,7 +322,7 @@ defmodule Dashboard.RSS.IngestService do
     fetch_worker().fetch_feed(feed)
   end
 
-  defp parse_feed(%HTTPoison.Response{} = response) do
+  defp parse_feed(%Req.Response{} = response) do
     feed_parser().parse_string(response.body)
   end
 
@@ -335,9 +345,6 @@ defmodule Dashboard.RSS.IngestService do
 
       %{reason: reason} ->
         "Error: #{inspect(reason)}"
-
-      other ->
-        "Error: #{inspect(other)}"
     end
   end
 
@@ -361,11 +368,11 @@ defmodule Dashboard.RSS.IngestService do
       {{:server_error, status}, _} ->
         %{class: :http, code: status, reason: :server_error}
 
-      {other_reason, %HTTPoison.Response{status_code: status}} ->
-        %{class: :http, code: status, reason: other_reason}
+        # {other_reason, %Req.Response{status: status}} ->
+        #   %{class: :http, code: status, reason: other_reason}
 
-      {other_reason, _} ->
-        %{class: :unknown, code: nil, reason: other_reason}
+        # {other_reason, _} ->
+        #   %{class: :unknown, code: nil, reason: other_reason}
     end
   end
 

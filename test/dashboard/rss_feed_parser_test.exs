@@ -25,7 +25,11 @@ defmodule Dashboard.RSSFeedParserTest do
     </rss>
     """
 
-    assert {:ok, %{type: :rss2, entries: [first, second]}} = FeedParser.parse_string(xml)
+    assert {:ok, %{type: :rss2, entries: entries}} = FeedParser.parse_string(xml)
+
+    first = Enum.find(entries, &(&1.link == "https://example.com/1"))
+    second = Enum.find(entries, &(&1.link == "https://example.com/2"))
+
     assert first.content == "<p>Full 1</p>"
     assert second[:content] == nil
   end

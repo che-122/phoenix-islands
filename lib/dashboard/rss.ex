@@ -113,6 +113,12 @@ defmodule Dashboard.RSS do
     |> Repo.one!()
   end
 
+  def count_feed_entries(feed_id) when is_binary(feed_id) do
+    FeedEntry
+    |> where([e], e.feed_id == ^feed_id)
+    |> Repo.aggregate(:count, :id)
+  end
+
   @doc """
   Gets a single feed.
 

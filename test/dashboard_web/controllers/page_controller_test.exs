@@ -7,6 +7,21 @@ defmodule DashboardWeb.PageControllerTest do
   alias Dashboard.RSS.FeedEntry
   alias Dashboard.RSS.FeedEntryEnclosure
 
+  setup do
+    previous_fetch_worker = Application.get_env(:dashboard, :rss_fetch_worker)
+    Application.put_env(:dashboard, :rss_fetch_worker, __MODULE__.FakeFetchWorker)
+
+    on_exit(fn ->
+      if is_nil(previous_fetch_worker) do
+        Application.delete_env(:dashboard, :rss_fetch_worker)
+      else
+        Application.put_env(:dashboard, :rss_fetch_worker, previous_fetch_worker)
+      end
+    end)
+
+    :ok
+  end
+
   test "GET /", %{conn: conn} do
     feed = feed_fixture(%{title: "Sidebar Feed", url: "https://example.com/sidebar.xml"})
     conn = get(conn, ~p"/")
@@ -155,6 +170,75 @@ defmodule DashboardWeb.PageControllerTest do
     assert page_2_body =~ "Page 2"
     assert page_2_body =~ "Episode 1"
     assert page_2_body =~ ~p"/list/#{feed.id}/entries?page=1"
+    assert page_2_body =~ ~r|/list/#{feed.id}/entries/[^"?]+\?page=2|
+  end
+
+  test "GET /list/:feed_id/entries clamps page to the last page", %{conn: conn} do
+    feed = feed_fixture(%{title: "Clamped Feed", url: "https://example.com/clamped.xml"})
+    now = DateTime.utc_now()
+
+    Enum.each(1..21, fn idx ->
+      {:ok, _entry} =
+        %FeedEntry{}
+        |> FeedEntry.changeset(%{
+          feed_id: feed.id,
+          identity_source: "guid",
+          identity_key: "clamp-entry-#{idx}",
+          identity_hash: "clamp-hash-#{idx}",
+          title: "Clamp Episode #{idx}",
+          published_at: DateTime.add(now, idx, :second),
+          first_seen_at: now,
+          last_seen_at: now
+        })
+        |> Repo.insert()
+    end)
+
+    body =
+      conn
+      |> get(~p"/list/#{feed.id}/entries?page=999")
+      |> html_response(200)
+
+    assert body =~ "Page 2"
+    assert body =~ "Clamp Episode 1"
+    refute body =~ "id=\"sidebar-entries-next\""
+  end
+
+  test "GET /list/:feed_id/entries/:entry_id preserves clamped page in sidebar links", %{
+    conn: conn
+  } do
+    feed = feed_fixture(%{title: "Entry Clamp Feed", url: "https://example.com/entry-clamp.xml"})
+    now = DateTime.utc_now()
+
+    inserted_entries =
+      Enum.map(1..21, fn idx ->
+        {:ok, entry} =
+          %FeedEntry{}
+          |> FeedEntry.changeset(%{
+            feed_id: feed.id,
+            identity_source: "guid",
+            identity_key: "entry-clamp-#{idx}",
+            identity_hash: "entry-clamp-hash-#{idx}",
+            title: "Entry Clamp Episode #{idx}",
+            published_at: DateTime.add(now, idx, :second),
+            first_seen_at: now,
+            last_seen_at: now
+          })
+          |> Repo.insert()
+
+        entry
+      end)
+
+    selected_entry = hd(inserted_entries)
+
+    body =
+      conn
+      |> get(~p"/list/#{feed.id}/entries/#{selected_entry.id}?page=999")
+      |> html_response(200)
+
+    assert body =~ "Entry list page 2"
+    assert body =~ ~p"/list/#{feed.id}/entries/#{selected_entry.id}?page=1"
+    assert body =~ ~p"/list/#{feed.id}/entries/#{selected_entry.id}?page=2"
+    assert body =~ ~p"/list/#{feed.id}/entries/#{Enum.at(inserted_entries, 0).id}?page=2"
   end
 
   test "GET /list/:feed_id/entries/:entry_id", %{conn: conn} do
@@ -179,8 +263,8 @@ defmodule DashboardWeb.PageControllerTest do
       %FeedEntryEnclosure{}
       |> FeedEntryEnclosure.changeset(%{
         feed_entry_id: entry.id,
-        url: "https://cdn.example.com/episode-detail.mp3",
-        media_type: "audio/mpeg"
+        url: "https://cdn.example.com/episode-detail.mp4",
+        media_type: "video/mpeg"
       })
       |> Repo.insert()
 
@@ -192,7 +276,13 @@ defmodule DashboardWeb.PageControllerTest do
     assert body =~ "id=\"content-entry-pagination\""
     assert body =~ "Episode detail"
     assert body =~ "A short summary"
-    assert body =~ "<audio"
-    assert body =~ "https://cdn.example.com/episode-detail.mp3"
+    assert body =~ "<video"
+    assert body =~ "https://cdn.example.com/episode-detail.mp4"
+  end
+
+  defmodule FakeFetchWorker do
+    def fetch_feed(%Dashboard.RSS.Feed{} = feed) do
+      {:not_modified, feed, %Req.Response{status: 304, headers: []}}
+    end
   end
 end

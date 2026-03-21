@@ -206,8 +206,8 @@ defmodule Dashboard.RSS.IngestServiceTest do
     alias Dashboard.RSS.Feed
 
     def fetch_feed(%Feed{url: "test://modified"} = feed) do
-      response = %HTTPoison.Response{
-        status_code: 200,
+      response = %Req.Response{
+        status: 200,
         headers: [{"etag", "etag-new"}, {"last-modified", "Tue, 03 Mar 2026 10:00:00 GMT"}],
         body: "<rss />"
       }
@@ -217,33 +217,33 @@ defmodule Dashboard.RSS.IngestServiceTest do
 
     def fetch_feed(%Feed{url: "test://entries"} = feed) do
       body = if is_nil(feed.content_hash), do: "<entries-v1 />", else: "<entries-v2 />"
-      response = %HTTPoison.Response{status_code: 200, headers: [], body: body}
+      response = %Req.Response{status: 200, headers: [], body: body}
       {:ok, feed, response}
     end
 
     def fetch_feed(%Feed{url: "test://entries_not_modified"} = feed) do
       if is_nil(feed.content_hash) do
-        response = %HTTPoison.Response{status_code: 200, headers: [], body: "<entries-single />"}
+        response = %Req.Response{status: 200, headers: [], body: "<entries-single />"}
         {:ok, feed, response}
       else
-        response = %HTTPoison.Response{status_code: 304, headers: []}
+        response = %Req.Response{status: 304, headers: []}
         {:not_modified, feed, response}
       end
     end
 
     def fetch_feed(%Feed{url: "test://parse_failure"} = feed) do
-      response = %HTTPoison.Response{status_code: 200, headers: [], body: "<bad />"}
+      response = %Req.Response{status: 200, headers: [], body: "<bad />"}
       {:ok, feed, response}
     end
 
     def fetch_feed(%Feed{url: "test://not_modified"} = feed) do
-      response = %HTTPoison.Response{status_code: 304, headers: []}
+      response = %Req.Response{status: 304, headers: []}
       {:not_modified, feed, response}
     end
 
     def fetch_feed(%Feed{url: "test://redirect"} = feed) do
-      response = %HTTPoison.Response{
-        status_code: 301,
+      response = %Req.Response{
+        status: 301,
         headers: [{"location", "https://redirected.example/feed"}]
       }
 
@@ -251,7 +251,7 @@ defmodule Dashboard.RSS.IngestServiceTest do
     end
 
     def fetch_feed(%Feed{url: "test://not_found"} = feed) do
-      response = %HTTPoison.Response{status_code: 404, headers: []}
+      response = %Req.Response{status: 404, headers: []}
       {:not_found, feed, response}
     end
 

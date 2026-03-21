@@ -32,9 +32,9 @@ defmodule Dashboard.RSS.BackoffTest do
     test "honors cache-control max-age floor for modified feeds" do
       feed = %Feed{observed_interval: 3600, ttl: nil}
 
-      response = %HTTPoison.Response{
+      response = %Req.Response{
         headers: [{"cache-control", "public, max-age=4000"}],
-        status_code: 200
+        status: 200
       }
 
       before = DateTime.utc_now()
@@ -62,7 +62,7 @@ defmodule Dashboard.RSS.BackoffTest do
 
     test "rate-limited errors use retry-after with min clamp" do
       feed = %Feed{error_count: 2}
-      response = %HTTPoison.Response{headers: [{"retry-after", "120"}], status_code: 429}
+      response = %Req.Response{headers: [{"retry-after", "120"}], status: 429}
 
       before = DateTime.utc_now()
       next_fetch = Backoff.calculate_next(feed, response, {:error, %{reason: :rate_limited}})
@@ -83,7 +83,7 @@ defmodule Dashboard.RSS.BackoffTest do
   describe "calculate_redirect_next/2" do
     test "returns immediate datetime" do
       feed = %Feed{}
-      response = %HTTPoison.Response{status_code: 301, headers: []}
+      response = %Req.Response{status: 301, headers: []}
 
       before = DateTime.utc_now()
       next_fetch = Backoff.calculate_redirect_next(feed, response)

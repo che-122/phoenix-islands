@@ -8,12 +8,14 @@ defmodule Dashboard.HttpUtils do
   end
 
   @doc """
-  Extracts a single header value from an `HTTPoison.Response`, case-insensitive.
+  Extracts a single header value from a `Req.Response`, case-insensitive.
   Returns `nil` if the header is not present.
   """
-  def extract_header(header_name, %HTTPoison.Response{} = response) do
+  def extract_header(header_name, %Req.Response{} = response) do
+    target = String.downcase(header_name)
+
     Enum.find_value(response.headers, fn {header, value} ->
-      if String.downcase(header, :default) == header_name, do: value
+      if String.downcase(header) == target, do: normalize_header_value(value)
     end)
   end
 
@@ -32,14 +34,15 @@ defmodule Dashboard.HttpUtils do
       iex> Dashboard.HttpUtils.parse_max_age(nil)
       nil
   """
-  def parse_max_age(nil), do: nil
-
   def parse_max_age(cache_control) when is_binary(cache_control) do
     case Regex.run(~r/max-age=(\d+)/i, cache_control) do
       [_, seconds] -> String.to_integer(seconds)
       _ -> nil
     end
   end
+
+  def parse_max_age([cache_control | _]), do: parse_max_age(cache_control)
+  def parse_max_age(_), do: nil
 
   @doc """
   Parses a `Retry-After` header value.
@@ -71,7 +74,7 @@ defmodule Dashboard.HttpUtils do
   @doc """
   Extracts `max-age` from the `Cache-Control` header of an HTTP response.
   """
-  def parse_max_age_from_response(%HTTPoison.Response{} = response) do
+  def parse_max_age_from_response(%Req.Response{} = response) do
     extract_header("cache-control", response)
     |> parse_max_age()
   end
@@ -79,8 +82,13 @@ defmodule Dashboard.HttpUtils do
   @doc """
   Extracts `Retry-After` from an HTTP response.
   """
-  def parse_retry_after_from_response(%HTTPoison.Response{} = response) do
+  def parse_retry_after_from_response(%Req.Response{} = response) do
     extract_header("retry-after", response)
     |> parse_retry_after()
   end
+
+  defp normalize_header_value(value) when is_binary(value), do: value
+  defp normalize_header_value([value | _]) when is_binary(value), do: value
+  defp normalize_header_value([]), do: nil
+  defp normalize_header_value(value), do: to_string(value)
 end

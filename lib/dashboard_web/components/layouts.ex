@@ -51,176 +51,201 @@ defmodule DashboardWeb.Layouts do
 
   attr :feed_modal_open, :boolean, default: false, doc: "whether add-feed modal is open"
   attr :feed_modal_changeset, :any, default: nil, doc: "changeset used in add-feed modal form"
+  attr :main_scroll_stable_key, :string, default: nil, doc: "main content stable scroll key"
 
   slot :inner_block, required: true
 
   def app(assigns) do
     ~H"""
-    <div class="mx-auto grid h-full w-full max-w-[120rem] grid-cols-1 gap-4 px-4 py-4 lg:grid-cols-[18rem_22rem_minmax(0,1fr)]">
+    <% selected_feed = Enum.find(@sidebar_feeds, &(&1.id == @selected_feed_id)) %>
+    <% sidebar_feeds_scroll_key = Enum.map_join(@sidebar_feeds, ",", & &1.id) %>
+    <% sidebar_entries_scroll_key =
+      [
+        @selected_feed_id || "",
+        Integer.to_string(@entries_page),
+        Enum.map_join(@sidebar_entries, ",", & &1.id)
+      ]
+      |> Enum.join("|") %>
+    <div class="mx-auto grid h-full w-full max-w-480 grid-cols-1 lg:grid-cols-[18rem_22rem_minmax(0,1fr)]">
       <aside
         id="sidebar-feeds"
-        class="hidden h-full overflow-y-auto rounded-2xl border border-base-300 bg-base-100/95 shadow-sm backdrop-blur lg:block"
+        class="hidden h-full overflow-y-auto border-r border-base-300 bg-base-100/95 lg:block"
+        data-swup-scroll-container
+        data-scroll-stable-key={sidebar_feeds_scroll_key}
       >
-        <div class="flex items-center justify-between border-b border-base-300 px-4 py-3">
-          <a href={~p"/list"} class="flex items-center gap-2 text-sm font-semibold tracking-wide">
-            <img src={~p"/images/logo.svg"} width="28" />
-            <span>Feeds</span>
-          </a>
-          <.theme_toggle />
-        </div>
-
-        <nav aria-label="Subscribed feeds" class="space-y-1 px-2 py-2">
-          <%= for feed <- @sidebar_feeds do %>
-            <a
-              id={"sidebar-feed-#{feed.id}"}
-              href={~p"/list/#{feed.id}/entries"}
-              class={[
-                "block rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                if(@selected_feed_id == feed.id,
-                  do: "bg-base-content text-base-100",
-                  else: "text-base-content/80 hover:bg-base-200 hover:text-base-content"
-                )
-              ]}
-            >
-              {feed.title}
+        <div id="sidebar-feeds-content">
+          <div class="flex items-center justify-between border-b border-base-300 px-4 py-3">
+            <a href={~p"/list"} class="flex items-center gap-2 text-sm font-semibold tracking-wide">
+              <img src={~p"/images/logo.svg"} width="28" />
+              <span>Feeds</span>
             </a>
-          <% end %>
-          <%= if @sidebar_feeds == [] do %>
-            <p class="rounded-lg border border-dashed border-base-300 px-3 py-4 text-sm text-base-content/60 mt-2">
-              No feeds yet. Add one to populate the sidebar.
-            </p>
-          <% end %>
-        </nav>
+            <.theme_toggle />
+          </div>
 
-        <div class="border-t border-base-300 px-4 py-3 text-xs text-base-content/60">
-          Phoenix v{Application.spec(:phoenix, :vsn)}
+          <nav aria-label="Subscribed feeds" class="space-y-1 px-2 py-2">
+            <%= for feed <- @sidebar_feeds do %>
+              <a
+                id={"sidebar-feed-#{feed.id}"}
+                href={~p"/list/#{feed.id}/entries"}
+                class={[
+                  "block rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  if(@selected_feed_id == feed.id,
+                    do: "bg-base-content text-base-100",
+                    else: "text-base-content/80 hover:bg-base-200 hover:text-base-content"
+                  )
+                ]}
+              >
+                {feed.title}
+              </a>
+            <% end %>
+            <%= if @sidebar_feeds == [] do %>
+              <p class="rounded-lg border border-dashed border-base-300 px-3 py-4 text-sm text-base-content/60 mt-2">
+                No feeds yet. Add one to populate the sidebar.
+              </p>
+            <% end %>
+          </nav>
+
+          <div class="border-t border-base-300 px-4 py-3 text-xs text-base-content/60">
+            Phoenix v{Application.spec(:phoenix, :vsn)}
+          </div>
         </div>
       </aside>
 
       <aside
         id="sidebar-entries"
-        class="hidden h-full overflow-y-auto rounded-2xl border border-base-300 bg-base-100/95 shadow-sm backdrop-blur lg:block"
+        class="hidden h-full overflow-y-auto border-r border-base-300 bg-base-100/95 lg:block"
+        data-swup-scroll-container
+        data-scroll-stable-key={sidebar_entries_scroll_key}
       >
-        <div class="border-b border-base-300 px-4 py-3">
-          <p class="text-xs uppercase tracking-wide text-base-content/60">Episodes</p>
-          <p class="mt-1 text-sm font-semibold text-base-content">
-            <%= if @selected_feed_id do %>
-              Feed entries
-            <% else %>
-              Select a feed
+        <div id="sidebar-entries-content">
+          <div class="border-b border-base-300 px-4 py-3">
+            <p class="text-xs uppercase tracking-wide text-base-content/60">Episodes</p>
+            <p class="mt-1 text-sm font-semibold text-base-content">
+              <%= if @selected_feed_id do %>
+                Feed entries
+              <% else %>
+                Select a feed
+              <% end %>
+            </p>
+          </div>
+          <div class="space-y-1 px-2 py-2">
+            <%= if @selected_feed_id && @sidebar_entries == [] do %>
+              <p class="rounded-lg border border-dashed border-base-300 px-3 py-4 text-sm text-base-content/60">
+                No episodes on this page.
+              </p>
             <% end %>
-          </p>
-        </div>
-        <div class="space-y-1 px-2 py-2">
-          <%= if @selected_feed_id && @sidebar_entries == [] do %>
-            <p class="rounded-lg border border-dashed border-base-300 px-3 py-4 text-sm text-base-content/60">
-              No episodes on this page.
-            </p>
-          <% end %>
-          <%= if !@selected_feed_id do %>
-            <p class="rounded-lg border border-dashed border-base-300 px-3 py-4 text-sm text-base-content/60">
-              Choose a feed in the left sidebar.
-            </p>
-          <% end %>
-          <%= for entry <- @sidebar_entries do %>
-            <% feed = Enum.find(@sidebar_feeds, &(&1.id == entry.feed_id)) %>
-            <a
-              id={"sidebar-entry-#{entry.id}"}
-              href={~p"/list/#{entry.feed_id}/entries/#{entry.id}"}
-              class={[
-                "block rounded-lg px-3 py-2 text-sm transition-colors",
-                if(@selected_entry_id == entry.id,
-                  do: "bg-base-content text-base-100",
-                  else: "text-base-content/80 hover:bg-base-200 hover:text-base-content"
-                )
-              ]}
-            >
-              <div class="flex items-start gap-3">
-                <.island
-                  module="playbutton"
-                  props={
-                    %{
-                      media: %{
-                        id: entry.id,
-                        feedId: entry.feed_id,
-                        title: entry.title || "(untitled)",
-                        feedTitle: if(feed, do: feed.title, else: "Unknown feed"),
-                        image: if(feed, do: feed.favicon, else: nil),
-                        attachments:
-                          Enum.map(entry.enclosures, fn enclosure ->
-                            %{url: enclosure.url, mimeType: enclosure.media_type}
-                          end)
+            <%= if !@selected_feed_id do %>
+              <p class="rounded-lg border border-dashed border-base-300 px-3 py-4 text-sm text-base-content/60">
+                Choose a feed in the left sidebar.
+              </p>
+            <% end %>
+            <%= for entry <- @sidebar_entries do %>
+              <% feed = Enum.find(@sidebar_feeds, &(&1.id == entry.feed_id)) %>
+              <a
+                id={"sidebar-entry-#{entry.id}"}
+                href={~p"/list/#{entry.feed_id}/entries/#{entry.id}?page=#{@entries_page}"}
+                class={[
+                  "block rounded-lg px-3 py-2 text-sm transition-colors",
+                  if(@selected_entry_id == entry.id,
+                    do: "bg-base-content text-base-100",
+                    else: "text-base-content/80 hover:bg-base-200 hover:text-base-content"
+                  )
+                ]}
+              >
+                <div class="flex items-start gap-3">
+                  <.island
+                    module="playbutton"
+                    props={
+                      %{
+                        media: %{
+                          id: entry.id,
+                          feedId: entry.feed_id,
+                          title: entry.title || "(untitled)",
+                          feedTitle: if(feed, do: feed.title, else: "Unknown feed"),
+                          image: if(feed, do: feed.favicon, else: nil),
+                          attachments:
+                            Enum.map(entry.enclosures, fn enclosure ->
+                              %{url: enclosure.url, mimeType: enclosure.media_type}
+                            end)
+                        }
                       }
                     }
-                  }
-                />
-                <div class="min-w-0">
-                  <p class="font-medium leading-tight">{entry.title || "(untitled)"}</p>
-                  <p class="mt-1 text-xs opacity-70">
-                    <%= if entry.published_at do %>
-                      {Calendar.strftime(entry.published_at, "%Y-%m-%d %H:%M")}
-                    <% else %>
-                      Unknown date
-                    <% end %>
-                  </p>
+                  />
+                  <div class="min-w-0">
+                    <p class="font-medium leading-tight">{entry.title || "(untitled)"}</p>
+                    <p class="mt-1 text-xs opacity-70">
+                      <%= if entry.published_at do %>
+                        {Calendar.strftime(entry.published_at, "%Y-%m-%d %H:%M")}
+                      <% else %>
+                        Unknown date
+                      <% end %>
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </a>
+              </a>
+            <% end %>
+          </div>
+
+          <%= if @entries_pagination_base_path do %>
+            <div
+              id="sidebar-entries-pagination"
+              class="hidden lg:flex items-center justify-between border-t border-base-300 bg-base-100 px-3 py-3 text-xs"
+            >
+              <%= if @entries_has_previous_page? do %>
+                <a
+                  id="sidebar-entries-prev"
+                  href={"#{@entries_pagination_base_path}?page=#{@entries_page - 1}"}
+                  class="rounded-lg border border-base-300 px-2.5 py-1.5 font-medium text-base-content/80 transition-colors hover:bg-base-200"
+                >
+                  Previous
+                </a>
+              <% else %>
+                <span class="rounded-lg border border-base-300 px-2.5 py-1.5 text-base-content/40">
+                  Previous
+                </span>
+              <% end %>
+
+              <span class="text-base-content/70">Page {@entries_page}</span>
+
+              <%= if @entries_has_next_page? do %>
+                <a
+                  id="sidebar-entries-next"
+                  href={"#{@entries_pagination_base_path}?page=#{@entries_page + 1}"}
+                  class="rounded-lg border border-base-300 px-2.5 py-1.5 font-medium text-base-content/80 transition-colors hover:bg-base-200"
+                >
+                  Next
+                </a>
+              <% else %>
+                <span class="rounded-lg border border-base-300 px-2.5 py-1.5 text-base-content/40">
+                  Next
+                </span>
+              <% end %>
+            </div>
           <% end %>
         </div>
-
-        <%= if @entries_pagination_base_path do %>
-          <div
-            id="sidebar-entries-pagination"
-            class="hidden lg:flex items-center justify-between border-t border-base-300 bg-base-100 px-3 py-3 text-xs"
-          >
-            <%= if @entries_has_previous_page? do %>
-              <a
-                id="sidebar-entries-prev"
-                href={"#{@entries_pagination_base_path}?page=#{@entries_page - 1}"}
-                class="rounded-lg border border-base-300 px-2.5 py-1.5 font-medium text-base-content/80 transition-colors hover:bg-base-200"
-              >
-                Previous
-              </a>
-            <% else %>
-              <span class="rounded-lg border border-base-300 px-2.5 py-1.5 text-base-content/40">
-                Previous
-              </span>
-            <% end %>
-
-            <span class="text-base-content/70">Page {@entries_page}</span>
-
-            <%= if @entries_has_next_page? do %>
-              <a
-                id="sidebar-entries-next"
-                href={"#{@entries_pagination_base_path}?page=#{@entries_page + 1}"}
-                class="rounded-lg border border-base-300 px-2.5 py-1.5 font-medium text-base-content/80 transition-colors hover:bg-base-200"
-              >
-                Next
-              </a>
-            <% else %>
-              <span class="rounded-lg border border-base-300 px-2.5 py-1.5 text-base-content/40">
-                Next
-              </span>
-            <% end %>
-          </div>
-        <% end %>
       </aside>
 
-      <main class="min-h-0 min-w-0 overflow-y-auto rounded-2xl border border-base-300 bg-base-100 shadow-sm">
-        <div class="border-b border-base-300 px-4 py-3 sm:px-6">
-          <div class="flex items-center justify-end gap-2 text-xs sm:text-sm">
-            <a href="https://phoenixframework.org/" class="btn btn-ghost btn-sm">Website</a>
-            <a href="https://github.com/phoenixframework/phoenix" class="btn btn-ghost btn-sm">
-              GitHub
-            </a>
-            <a href={~p"/feeds/new"} class="btn btn-primary btn-sm">
-              Add New Feed
-            </a>
+      <main
+        id="main-scroll-container"
+        class="min-h-0 min-w-0 overflow-y-auto bg-base-100"
+        data-swup-scroll-container
+        data-scroll-stable-key={@main_scroll_stable_key}
+      >
+        <div id="main-content">
+          <div class="border-b border-base-300 px-4 py-3 sm:px-6">
+            <div class="flex items-center justify-end gap-2 text-xs sm:text-sm">
+              <a href="https://phoenixframework.org/" class="btn btn-ghost btn-sm">Website</a>
+              <a href="https://github.com/phoenixframework/phoenix" class="btn btn-ghost btn-sm">
+                GitHub
+              </a>
+              <a href={~p"/feeds/new"} class="btn btn-primary btn-sm">
+                Add New Feed
+              </a>
+            </div>
           </div>
-        </div>
-        <div class="p-4 sm:p-6">
-          {render_slot(@inner_block)}
+          <div class="p-4 sm:p-6">
+            {render_slot(@inner_block)}
+          </div>
         </div>
       </main>
     </div>
@@ -279,6 +304,7 @@ defmodule DashboardWeb.Layouts do
     <% end %>
 
     <.flash_group flash={@flash} />
+    <DashboardWeb.Components.RSSDebugPanel.panel selected_feed={selected_feed} />
     """
   end
 

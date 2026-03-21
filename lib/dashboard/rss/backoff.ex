@@ -71,7 +71,7 @@ defmodule Dashboard.RSS.Backoff do
 
   Redirects are retried immediately using the feed's updated canonical URL.
   """
-  def calculate_redirect_next(%Feed{}, %HTTPoison.Response{}) do
+  def calculate_redirect_next(%Feed{}, %Req.Response{}) do
     DateTime.utc_now()
   end
 
@@ -167,13 +167,13 @@ defmodule Dashboard.RSS.Backoff do
 
   defp server_minimum(nil), do: 0
 
-  defp server_minimum(%HTTPoison.Response{} = response) do
+  defp server_minimum(%Req.Response{} = response) do
     HttpUtils.parse_max_age_from_response(response) || 0
   end
 
   defp retry_after_seconds(nil), do: nil
 
-  defp retry_after_seconds(%HTTPoison.Response{} = response) do
+  defp retry_after_seconds(%Req.Response{} = response) do
     HttpUtils.parse_retry_after_from_response(response)
   end
 

@@ -62,29 +62,31 @@ defmodule DashboardWeb.PageController do
   end
 
   def entries(conn, %{"feed_id" => feed_id}) do
-    page = parse_page_param(conn.params["page"])
+    requested_page = parse_page_param(conn.params["page"])
     page_size = 20
     feed = RSS.get_feed!(feed_id)
+    page = clamp_page(feed_id, requested_page, page_size)
     entries = RSS.list_feed_entries(feed_id, page: page, page_size: page_size)
-    has_next_page? = RSS.list_feed_entries(feed_id, page: page + 1, page_size: 1) != []
+    max_page = max_page(feed_id, page_size)
 
     render(conn, :entries,
       feed: feed,
       entries: entries,
       page: page,
       has_previous_page?: page > 1,
-      has_next_page?: has_next_page?,
+      has_next_page?: page < max_page,
       entries_pagination_base_path: ~p"/list/#{feed.id}/entries"
     )
   end
 
   def entry(conn, %{"feed_id" => feed_id, "entry_id" => entry_id}) do
-    page = parse_page_param(conn.params["page"])
+    requested_page = parse_page_param(conn.params["page"])
     page_size = 20
     feed = RSS.get_feed!(feed_id)
     entry = RSS.get_feed_entry!(feed_id, entry_id)
+    page = clamp_page(feed_id, requested_page, page_size)
     entries = RSS.list_feed_entries(feed_id, page: page, page_size: page_size)
-    has_next_page? = RSS.list_feed_entries(feed_id, page: page + 1, page_size: 1) != []
+    max_page = max_page(feed_id, page_size)
 
     render(conn, :entry,
       feed: feed,
@@ -92,7 +94,7 @@ defmodule DashboardWeb.PageController do
       entries: entries,
       page: page,
       has_previous_page?: page > 1,
-      has_next_page?: has_next_page?,
+      has_next_page?: page < max_page,
       entries_pagination_base_path: ~p"/list/#{feed.id}/entries/#{entry.id}"
     )
   end
@@ -105,6 +107,17 @@ defmodule DashboardWeb.PageController do
       {page, ""} when page > 0 -> page
       _ -> 1
     end
+  end
+
+  defp clamp_page(feed_id, requested_page, page_size) do
+    requested_page
+    |> min(max_page(feed_id, page_size))
+    |> max(1)
+  end
+
+  defp max_page(feed_id, page_size) do
+    total_entries = RSS.count_feed_entries(feed_id)
+    max(1, div(total_entries + page_size - 1, page_size))
   end
 
   defp list_assigns(changeset \\ RSS.change_feed(%Feed{})) do
